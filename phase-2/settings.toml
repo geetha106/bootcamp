@@ -1,0 +1,15 @@
+[general]
+data_source = "PMC"                  # Current source: PMC
+log_level = "INFO"                   # Options: DEBUG, INFO, WARNING
+output_dir = "data/output"           # Where to store CSV/JSON exports
+
+[storage]
+backend = "duckdb"
+db_path = "data/figurex.db"          # Path for DuckDB
+
+[api]
+api_key = "changeme123"              # For securing REST API
+
+[ingestion]
+watch_folder = "data/watch"          # Folder to monitor for new ID files
+batch_size = 10                      # How many papers to ingest at once
