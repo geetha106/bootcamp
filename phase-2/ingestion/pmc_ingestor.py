@@ -1,8 +1,8 @@
 # pmc_ingestor.py
 import requests
 import xml.etree.ElementTree as ET
-from typing import List
 from models.paper import Paper, Figure
+from typing import List
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -13,8 +13,13 @@ class PMCIngestor():
 
     def fetch(self, pmc_id: str) -> Paper:
         """
-        Fetch a paper from PubMed Central by its PMC ID.
-        Returns a Paper model with title, abstract, and figures.
+        Fetch a paper from PMC and extract its title, abstract, and figures.
+
+        Args:
+            pmc_id: The PMC ID of the paper, with or without "PMC" prefix
+
+        Returns:
+            Paper object with title, abstract, and figures
         """
         # Ensure pmc_id has 'PMC' prefix
         if not pmc_id.startswith("PMC"):
@@ -36,53 +41,51 @@ class PMCIngestor():
         abstract = None
         figures: List[Figure] = []
 
+        # Extract document info from BioC XML
         for document in root.findall(".//document"):
+            # First, try to get the title
             for passage in document.findall("passage"):
                 infons = {inf.attrib["key"]: inf.text for inf in passage.findall("infon")}
                 section_type = infons.get("section_type", "").lower()
 
                 text_elem = passage.find("text")
-                if text_elem is None:
+                if text_elem is None or not text_elem.text:
                     continue
 
                 text = text_elem.text
 
+                # Extract title
                 if section_type == "title" and not title:
                     title = text
+
+                # Extract abstract
                 elif section_type == "abstract" and not abstract:
                     abstract = text
-                elif section_type == "fig" or "fig_caption" in section_type:
+
+                # Extract figures
+                elif section_type == "fig" or "fig" in section_type or "figure" in section_type:
                     caption = text
-                    figure_url = None
+                    figure_url = None  # PMC BioC format doesn't include URLs directly
 
-                    # Try to get figure label from infons
-                    label = None
-                    for key in ["figure_title", "fig_title", "title"]:
-                        if key in infons:
-                            label = infons[key]
-                            break
+                    # Try to get figure label from different sources
+                    label = (
+                            infons.get("fig_type", "") or
+                            infons.get("figure_title", "") or
+                            infons.get("title", "")
+                    )
 
-                    if not label:
-                        # Try to extract figure label from caption
-                        if caption and caption.strip().lower().startswith(("figure", "fig")):
-                            parts = caption.split(".", 1)
-                            if len(parts) > 1:
-                                label = parts[0].strip()
-                            else:
-                                label = "Figure"
-                        else:
-                            label = f"Figure {len(figures) + 1}"
+                    # If no label found, create a generic one based on figure count
+                    if not label or label.lower() in ["fig", "figure"]:
+                        label = f"Figure {len(figures) + 1}"
 
                     figures.append(Figure(label=label, caption=caption, url=figure_url))
 
-        if not title:
-            title = f"Paper {pmc_id}"
-
-        logger.info(f"Extracted paper: {title} with {len(figures)} figures")
+        # Log extraction results
+        logger.info(f"Extracted paper: {title or pmc_id} with {len(figures)} figures")
 
         return Paper(
             paper_id=pmc_id,
-            title=title,
+            title=title or f"Untitled Paper ({pmc_id})",
             abstract=abstract or "",
             figures=figures
         )
