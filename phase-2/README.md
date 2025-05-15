@@ -1,3 +1,4 @@
+## Folder structure
 
 ```bash
 figurex/                         # PyPI package root
@@ -44,3 +45,11 @@ figurex/                         # PyPI package root
     ├── test_storage.py
     
 ```
+
+## Usage 
+
+python -m cli.cli PMC1790863
+
+python -m scripts.inspect_db
+
+python test_ingest.py PMC7696669 –reset
