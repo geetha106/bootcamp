@@ -1,3 +1,4 @@
+-- schema.sql with updated entities table to include type
 CREATE TABLE IF NOT EXISTS papers (
     id INTEGER PRIMARY KEY,
     paper_id TEXT UNIQUE NOT NULL,
@@ -9,6 +10,7 @@ CREATE TABLE IF NOT EXISTS papers (
 CREATE TABLE IF NOT EXISTS figures (
     id INTEGER PRIMARY KEY,
     paper_id TEXT NOT NULL,
+    label TEXT NOT NULL,
     caption TEXT,
     figure_url TEXT,
     FOREIGN KEY(paper_id) REFERENCES papers(paper_id)
@@ -16,8 +18,9 @@ CREATE TABLE IF NOT EXISTS figures (
 
 CREATE TABLE IF NOT EXISTS entities (
     id INTEGER PRIMARY KEY,
-    name TEXT UNIQUE,
-    type TEXT  -- Added type field to store entity type (GENE, DISEASE, etc.)
+    name TEXT NOT NULL,
+    type TEXT,
+    UNIQUE(name, type)
 );
 
 CREATE TABLE IF NOT EXISTS figure_entities (
@@ -25,5 +28,6 @@ CREATE TABLE IF NOT EXISTS figure_entities (
     figure_id INTEGER NOT NULL,
     entity_id INTEGER NOT NULL,
     FOREIGN KEY(figure_id) REFERENCES figures(id),
-    FOREIGN KEY(entity_id) REFERENCES entities(id)
+    FOREIGN KEY(entity_id) REFERENCES entities(id),
+    UNIQUE(figure_id, entity_id)
 );
