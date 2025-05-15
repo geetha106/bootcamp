@@ -1,5 +1,5 @@
 
-
+```bash
 figurex/                         # PyPI package root
 ├── api/                         # REST API logic (FastAPI)
 │   └── routes.py                # Endpoints for querying and triggering ingestion
@@ -42,3 +42,5 @@ figurex/                         # PyPI package root
     ├── test_ingestion.py
     ├── test_api.py
     ├── test_storage.py
+    
+```
