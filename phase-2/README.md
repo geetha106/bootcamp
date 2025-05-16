@@ -68,7 +68,7 @@ python -m cli.cli ingest paper_ids.txt
 3. Batch ingestion of multiple IDs:
 
 ```bash
-python -m cli.cli batch_ingest PMC1790863 PMC7696669 35871145
+python -m cli.cli batch PMC1790863 PMC7696669 35871145
 ```
 
 4. Testing batch ingestion:
@@ -86,5 +86,5 @@ python test_batch_ingest.py --reset
 6. Watching a folder for new files:
 
 ```bash
-python -m cli.cli watch_folder --folder-path data/watch --interval 30
+python -m cli.cli watch --folder-path data/watch --interval 30
 ```
