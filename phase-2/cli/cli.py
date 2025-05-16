@@ -3,6 +3,7 @@ import typer
 import requests
 import re
 import time
+import yaml
 import os
 from pathlib import Path
 from typing import List, Optional
@@ -15,6 +16,14 @@ import time  # Added for retry with delay
 cli = typer.Typer()
 logger = get_logger()
 
+def get_ncbi_api_key():
+    try:
+        with open("settings.yaml", "r") as f:
+            settings = yaml.safe_load(f)
+        return settings.get("ncbi", {}).get("api_key")
+    except Exception as e:
+        logger.error(f"Error loading API key from settings: {e}")
+        return None
 
 def is_pmid(paper_id: str) -> bool:
     """Check if the provided ID is a PMID (all digits)"""

@@ -1,48 +1,26 @@
-# logging.py
 from rich.logging import RichHandler
+from rich.console import Console
 import logging
-import sys
-
-# Store loggers to avoid duplicate handlers
-_loggers = {}
 
 
 def get_logger(name="figurex"):
-    """
-    Get a logger with consistent formatting using Rich.
-    This avoids duplicate log messages.
-    """
-    global _loggers
+    # Create a console with pager disabled
+    console = Console(force_terminal=True, force_interactive=False)
 
-    if name in _loggers:
-        return _loggers[name]
-
-    # Create new logger
-    logger = logging.getLogger(name)
-
-    # Remove any existing handlers to avoid duplicates
-    while logger.handlers:
-        logger.removeHandler(logger.handlers[0])
-
-    # Configure handler with rich formatting
+    # Create a RichHandler with our custom console
     handler = RichHandler(
+        console=console,
         rich_tracebacks=True,
+        # Disable markup in log messages (optional)
+        markup=False,
+        # Disable the pager
         show_path=False,
-        omit_repeated_times=True
     )
 
-    # Format: no need for timestamp/level as RichHandler adds these
-    formatter = logging.Formatter("%(message)s")
-    handler.setFormatter(formatter)
-
-    # Add handler and set level
-    logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
-
-    # Don't propagate to avoid duplicate logs
-    logger.propagate = False
-
-    # Store for future reference
-    _loggers[name] = logger
+    # Set up the logger
+    logger = logging.getLogger(name)
+    if not logger.handlers:
+        logger.setLevel(logging.INFO)
+        logger.addHandler(handler)
 
     return logger
