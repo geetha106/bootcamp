@@ -2,13 +2,15 @@
 import typer
 import requests
 import re
+import time
+import os
+from pathlib import Path
 from typing import List, Optional
 from ingestion.pmc_ingestor import PMCIngestor
 from ingestion.pubtator_client import PubTatorClient
 from storage.duckdb_backend import DuckDBStorage
 from utils.logging import get_logger
-import time
-import os
+import time  # Added for retry with delay
 
 cli = typer.Typer()
 logger = get_logger()
@@ -73,216 +75,199 @@ def convert_pmc_to_pmid(pmc_id: str) -> str:
         return ""
 
 
-def process_single_paper(paper_id: str, max_retries: int = 3) -> bool:
+def process_paper(paper_id: str) -> bool:
     """
-    Process a single paper by ID, with retry logic.
+    Process a single paper using either a PMC ID or PMID.
     Returns True if successful, False otherwise.
     """
+    # Determine if we're dealing with a PMID or PMC ID
     original_id = paper_id
-    retry_count = 0
 
-    while retry_count < max_retries:
+    if is_pmid(paper_id):
+        logger.info(f"Detected PMID: {paper_id}")
+        pubtator_id = paper_id  # PubTator uses PMID directly
+
+        # Try direct PMC fetch first (in case PMC ID is all digits)
+        pmc_id = f"PMC{paper_id}"
+        logger.info(f"Trying direct fetch with PMC ID: {pmc_id}")
+
         try:
-            if is_pmid(paper_id):
-                logger.info(f"Detected PMID: {paper_id}")
-                pubtator_id = paper_id  # PubTator uses PMID directly
-
-                # Try direct PMC fetch first (in case PMC ID is all digits)
-                pmc_id = f"PMC{paper_id}"
-                logger.info(f"Trying direct fetch with PMC ID: {pmc_id}")
-
-                try:
-                    pmc = PMCIngestor()
-                    paper = pmc.fetch(pmc_id)
-                    logger.info(f"Successfully fetched paper: {paper.title}")
-                except Exception as e:
-                    # If direct fetch fails, try to convert PMID to PMC ID
-                    logger.info(f"Direct fetch failed, trying PMID conversion: {e}")
-                    pmc_id = convert_pmid_to_pmc(paper_id)
-                    if not pmc_id:
-                        logger.error(
-                            f"Could not convert PMID {paper_id} to PMC ID. Please check if this paper exists in PMC.")
-                        return False
-                    paper_id = pmc_id  # Use PMC ID for fetching from PMC
-
-                    try:
-                        pmc = PMCIngestor()
-                        paper = pmc.fetch(paper_id)
-                        logger.info(f"Successfully fetched paper after conversion: {paper.title}")
-                    except Exception as e:
-                        logger.error(f"Failed to fetch paper using converted PMC ID {paper_id}: {e}")
-                        retry_count += 1
-                        time.sleep(1)  # Wait before retrying
-                        continue
-            else:
-                # Ensure PMC ID has the PMC prefix
-                if not paper_id.startswith("PMC"):
-                    paper_id = f"PMC{paper_id}"
-
-                logger.info(f"Using PMC ID: {paper_id}")
-
-                # Fetch the paper first to ensure it exists
-                try:
-                    pmc = PMCIngestor()
-                    paper = pmc.fetch(paper_id)
-                    logger.info(f"Successfully fetched paper: {paper.title}")
-                except Exception as e:
-                    logger.error(f"Failed to fetch paper with ID {paper_id}: {e}")
-                    retry_count += 1
-                    time.sleep(1)  # Wait before retrying
-                    continue
-
-                # Convert PMC to PMID for PubTator
-                pubtator_id = convert_pmc_to_pmid(paper_id)
-                if not pubtator_id:
-                    logger.warning(f"Could not convert {paper_id} to PMID. Will use PMC ID for PubTator.")
-                    # Use PMC numeric ID as fallback
-                    pubtator_id = paper_id.replace("PMC", "")
-
-            # Now proceed with entity extraction and storage
-            try:
-                pubtator = PubTatorClient()
-                storage = DuckDBStorage()
-
-                # Fetch entities for each figure
-                for fig in paper.figures:
-                    logger.info(f"Annotating figure: {fig.label}")
-                    fig.entities = pubtator.fetch_entities(pubtator_id)
-
-                storage.save_paper(paper)
-                logger.info(f"Ingestion complete for original ID: {original_id}")
-                return True
-            except Exception as e:
-                logger.error(f"Error during entity extraction or storage: {e}")
-                retry_count += 1
-                time.sleep(1)  # Wait before retrying
-                continue
-
+            pmc = PMCIngestor()
+            paper = pmc.fetch(pmc_id)
+            logger.info(f"Successfully fetched paper: {paper.title}")
         except Exception as e:
-            logger.error(f"Unexpected error processing paper {original_id}: {e}")
-            retry_count += 1
-            time.sleep(1)  # Wait before retrying
+            # If direct fetch fails, try to convert PMID to PMC ID
+            logger.info(f"Direct fetch failed, trying PMID conversion: {e}")
+            pmc_id = convert_pmid_to_pmc(paper_id)
+            if not pmc_id:
+                logger.error(f"Could not convert PMID {paper_id} to PMC ID. Please check if this paper exists in PMC.")
+                return False
+            paper_id = pmc_id  # Use PMC ID for fetching from PMC
 
-    logger.error(f"Failed to process paper {original_id} after {max_retries} attempts")
-    return False
+            try:
+                pmc = PMCIngestor()
+                paper = pmc.fetch(paper_id)
+                logger.info(f"Successfully fetched paper after conversion: {paper.title}")
+            except Exception as e:
+                logger.error(f"Failed to fetch paper using converted PMC ID {paper_id}: {e}")
+                return False
+    else:
+        # Ensure PMC ID has the PMC prefix
+        if not paper_id.startswith("PMC"):
+            paper_id = f"PMC{paper_id}"
+
+        logger.info(f"Using PMC ID: {paper_id}")
+
+        # Fetch the paper first to ensure it exists
+        try:
+            pmc = PMCIngestor()
+            paper = pmc.fetch(paper_id)
+            logger.info(f"Successfully fetched paper: {paper.title}")
+        except Exception as e:
+            logger.error(f"Failed to fetch paper with ID {paper_id}: {e}")
+            return False
+
+        # Convert PMC to PMID for PubTator
+        pubtator_id = convert_pmc_to_pmid(paper_id)
+        if not pubtator_id:
+            logger.warning(f"Could not convert {paper_id} to PMID. Will use PMC ID for PubTator.")
+            # Use PMC numeric ID as fallback
+            pubtator_id = paper_id.replace("PMC", "")
+
+    # Now proceed with entity extraction and storage
+    try:
+        pubtator = PubTatorClient()
+        storage = DuckDBStorage()
+
+        # Fetch entities for each figure
+        for fig in paper.figures:
+            logger.info(f"Annotating figure: {fig.label}")
+            fig.entities = pubtator.fetch_entities(pubtator_id)
+
+        storage.save_paper(paper)
+        logger.info(f"Ingestion complete for original ID: {original_id}")
+        return True
+    except Exception as e:
+        logger.error(f"Error during entity extraction or storage: {e}")
+        return False
 
 
 @cli.command()
-def ingest(
-        paper_id: str = typer.Argument(..., help="Single paper ID or path to file with multiple IDs")
-):
+def ingest(paper_id: str):
     """
     Ingest a paper using either a PMC ID or PMID.
 
     If PMID is provided, it will be converted to PMC ID for fetching from PMC.
-
-    Can also provide a path to a file containing a list of IDs (one per line).
+    If a text file with paper IDs is provided, all papers in the file will be ingested.
     """
     # Check if paper_id is a file path
-    if os.path.isfile(paper_id):
-        batch_ingest_from_file(paper_id)
-    else:
-        # Process single paper ID
-        process_single_paper(paper_id)
+    if paper_id.endswith('.txt') and os.path.exists(paper_id):
+        logger.info(f"Processing paper IDs from file: {paper_id}")
+        with open(paper_id, 'r') as f:
+            paper_ids = [line.strip() for line in f if line.strip()]
 
-
-@cli.command()
-def batch_ingest(
-        paper_ids: List[str] = typer.Argument(..., help="List of paper IDs (PMC or PMID)")
-):
-    """
-    Ingest multiple papers using a list of PMC IDs or PMIDs.
-    """
-    total = len(paper_ids)
-    successful = 0
-    failed = 0
-
-    logger.info(f"Starting batch ingestion of {total} papers")
-
-    for i, paper_id in enumerate(paper_ids):
-        logger.info(f"Processing paper {i + 1}/{total}: {paper_id}")
-        if process_single_paper(paper_id):
-            successful += 1
-        else:
-            failed += 1
-
-    logger.info(f"Batch ingestion complete: {successful} successful, {failed} failed out of {total}")
-
-
-def batch_ingest_from_file(file_path: str):
-    """
-    Ingest multiple papers from a file containing one ID per line.
-    Lines starting with # are treated as comments.
-    """
-    try:
-        with open(file_path, 'r') as f:
-            paper_ids = [line.strip() for line in f if line.strip() and not line.strip().startswith('#')]
-
-        if not paper_ids:
-            logger.warning(f"No valid paper IDs found in {file_path}")
-            return
-
-        total = len(paper_ids)
-        successful = 0
-        failed = 0
-
-        logger.info(f"Starting batch ingestion of {total} papers from file {file_path}")
-
-        for i, paper_id in enumerate(paper_ids):
-            logger.info(f"Processing paper {i + 1}/{total}: {paper_id}")
-            if process_single_paper(paper_id):
-                successful += 1
+        # Process each paper ID
+        success_count = 0
+        failed_count = 0
+        for pid in paper_ids:
+            if process_paper(pid):
+                success_count += 1
             else:
-                failed += 1
+                failed_count += 1
 
-        logger.info(f"Batch ingestion complete: {successful} successful, {failed} failed out of {total}")
-    except Exception as e:
-        logger.error(f"Error processing file {file_path}: {e}")
+        logger.info(f"Batch processing complete. Success: {success_count}, Failed: {failed_count}")
+    else:
+        # Process a single paper ID
+        process_paper(paper_id)
 
 
 @cli.command()
-def watch_folder(
-        folder_path: str = typer.Option("data/watch", help="Path to folder to watch for ID files"),
-        interval: int = typer.Option(60, help="Check interval in seconds")
+def batch(paper_ids: List[str]):
+    """
+    Ingest multiple papers at once given their PMC IDs or PMIDs.
+    """
+    success_count = 0
+    failed_count = 0
+
+    logger.info(f"Processing {len(paper_ids)} paper(s)...")
+
+    for paper_id in paper_ids:
+        if process_paper(paper_id):
+            success_count += 1
+        else:
+            failed_count += 1
+
+    logger.info(f"Batch processing complete. Success: {success_count}, Failed: {failed_count}")
+
+
+@cli.command()
+def watch(
+        folder_path: str = typer.Option("data/watch", "--folder-path", help="Path to watch for paper ID files"),
+        interval: int = typer.Option(60, "--interval", help="Check interval in seconds")
 ):
     """
-    Watch a folder for files containing paper IDs to ingest.
+    Watch a folder for text files containing paper IDs to ingest.
+
+    Files should contain one paper ID per line, and should have .txt extension.
     Processed files will be moved to a 'processed' subfolder.
     """
-    from pathlib import Path
-    import time
-
     watch_dir = Path(folder_path)
     processed_dir = watch_dir / "processed"
-    failed_dir = watch_dir / "failed"
 
     # Create directories if they don't exist
-    watch_dir.mkdir(exist_ok=True)
+    watch_dir.mkdir(exist_ok=True, parents=True)
     processed_dir.mkdir(exist_ok=True)
-    failed_dir.mkdir(exist_ok=True)
 
-    logger.info(f"Watching folder {watch_dir} for paper ID files (checking every {interval} seconds)")
+    logger.info(f"Watching folder {watch_dir} for paper ID files. Press Ctrl+C to stop.")
 
     try:
         while True:
-            for file_path in watch_dir.glob("*.txt"):
-                if file_path.is_file() and file_path.name != ".gitkeep":
-                    logger.info(f"Found file: {file_path}")
+            # Find all .txt files in the watch directory
+            files = list(watch_dir.glob("*.txt"))
+
+            if files:
+                logger.info(f"Found {len(files)} file(s) to process")
+
+                for file_path in files:
+                    # Skip files in the processed directory
+                    if "processed" in str(file_path):
+                        continue
+
+                    logger.info(f"Processing file: {file_path}")
 
                     try:
-                        batch_ingest_from_file(str(file_path))
-                        # Move to processed directory
-                        file_path.rename(processed_dir / file_path.name)
-                        logger.info(f"Moved {file_path.name} to processed directory")
-                    except Exception as e:
-                        logger.error(f"Error processing {file_path.name}: {e}")
-                        # Move to failed directory
-                        file_path.rename(failed_dir / file_path.name)
-                        logger.info(f"Moved {file_path.name} to failed directory")
+                        # Read paper IDs from the file
+                        with open(file_path, 'r') as f:
+                            paper_ids = [line.strip() for line in f if line.strip()]
 
+                        # Process each paper
+                        success_count = 0
+                        failed_count = 0
+                        for paper_id in paper_ids:
+                            if process_paper(paper_id):
+                                success_count += 1
+                            else:
+                                failed_count += 1
+
+                        logger.info(
+                            f"File {file_path.name} processed. Success: {success_count}, Failed: {failed_count}")
+
+                        # Move the file to the processed directory
+                        timestamp = time.strftime("%Y%m%d-%H%M%S")
+                        new_filename = f"{file_path.stem}_{timestamp}{file_path.suffix}"
+                        file_path.rename(processed_dir / new_filename)
+
+                    except Exception as e:
+                        logger.error(f"Error processing file {file_path}: {e}")
+
+            else:
+                logger.debug(f"No files found in {watch_dir}. Waiting...")
+
+            # Wait for the next check
             time.sleep(interval)
+
     except KeyboardInterrupt:
-        logger.info("Stopping folder watch")
+        logger.info("Folder watching stopped")
 
 
 if __name__ == "__main__":

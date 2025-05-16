@@ -48,44 +48,43 @@ figurex/                         # PyPI package root
 
 ## Usage 
 
-python -m cli.cli PMC1790863
-
+```bash
 python -m scripts.inspect_db
-
-python test_ingest.py PMC7696669 –reset
+```
 
 ## Sample usage examples for the batch processing functionality
-Process multiple papers from command line
+1. Single paper ingestion:
 
-# Ingest multiple papers using the batch_ingest command
+```bash
+python -m cli.cli ingest PMC1790863
+```
 
-python -m cli.cli batch_ingest PMC1790863 PMC7696669 35871145
+2. Batch ingestion from file:
 
-# Ingest multiple papers using a file (one ID per line)
+```bash
 python -m cli.cli ingest paper_ids.txt
+```
 
-# Reset database and process sample papers
-python test_batch_ingest.py --reset
+3. Batch ingestion of multiple IDs:
 
-# Display database contents without processing
-python test_batch_ingest.py --display
+```bash
+python -m cli.cli batch_ingest PMC1790863 PMC7696669 35871145
+```
 
-# Process specific papers and display results
+4. Testing batch ingestion:
+
+```bash
 python test_batch_ingest.py PMC1790863 PMC7696669 --display
+```
 
-# Watch a folder for new paper ID files
+5. Resetting the database:
+
+```bash
+python test_batch_ingest.py --reset
+```
+
+6. Watching a folder for new files:
+
+```bash
 python -m cli.cli watch_folder --folder-path data/watch --interval 30
-Sample paper_ids.txt format
-# This is a comment
-PMC1790863
-PMC7696669
-35871145  # This is a PMID
-
-## Folder watching
-The watch_folder command monitors a specified directory for .txt files containing paper IDs (one per line).
-When a file is detected, it processes all IDs and moves the file to either:
-
-processed/ - if processing was successful
-failed/ - if errors occurred during processing
-
-This enables automated batch processing of papers by simply dropping files into the watched directory.
+```

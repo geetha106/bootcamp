@@ -1,10 +1,9 @@
+#!/usr/bin/env python
 # test_batch_ingest.py
-# !/usr/bin/env python
 
 import os
 import sys
-import tempfile
-from cli.cli import batch_ingest, batch_ingest_from_file
+from cli.cli import process_paper
 from storage.duckdb_backend import DuckDBStorage
 from utils.logging import get_logger
 
@@ -21,102 +20,115 @@ def reset_database():
         logger.info(f"No existing database found at {db_path}")
 
 
-def display_all_papers():
-    """Display summary stats for all papers in the database"""
+def display_papers_data():
+    """Display all papers from the database"""
     db = DuckDBStorage()
 
     # Get all papers
-    papers = db.conn.execute("SELECT * FROM papers").fetchall()
+    papers = db.conn.execute(
+        "SELECT * FROM papers"
+    ).fetchall()
 
     if not papers:
         logger.error("No papers found in database")
         return
 
-    print("\n" + "=" * 80)
-    print(f"TOTAL PAPERS IN DATABASE: {len(papers)}")
-    print("=" * 80)
+    print(f"\nFound {len(papers)} papers in database:")
 
     for paper_data in papers:
-        _, paper_id, title, abstract, source = paper_data
-
-        # Get figure count for this paper
-        fig_count = db.conn.execute(
-            "SELECT COUNT(*) FROM figures WHERE paper_id = ?",
-            (paper_id,)
-        ).fetchone()[0]
-
-        # Get entity count for this paper's figures
-        entity_count = db.conn.execute(
-            """
-            SELECT COUNT(DISTINCT fe.entity_id)
-            FROM figures f
-            JOIN figure_entities fe ON f.id = fe.figure_id
-            WHERE f.paper_id = ?
-            """,
-            (paper_id,)
-        ).fetchone()[0]
-
-        print(f"Paper ID: {paper_id}")
-        print(f"Title: {title}")
-        print(f"Figures: {fig_count}")
-        print(f"Unique Entities: {entity_count}")
+        print("\n" + "=" * 80)
+        print(f"PAPER: {paper_data[2]}")
+        print(f"ID: {paper_data[1]}")
         print("-" * 80)
+        print(f"Abstract: {paper_data[3][:200]}..." if paper_data[3] else "No abstract available")
+        print("=" * 80)
+
+        # Get figures for this paper
+        figures = db.conn.execute(
+            "SELECT * FROM figures WHERE paper_id = ?",
+            (paper_data[1],)
+        ).fetchall()
+
+        print(f"\nFound {len(figures)} figures:")
+
+        for fig in figures:
+            fig_id, paper_id, label, caption, url = fig
+            print(f"\n[Figure {fig_id}]")
+            print(f"Label: {label}")
+            print(f"Caption: {caption[:100]}..." if caption else "No caption available")
+
+            # Get entities for this figure
+            entities = db.conn.execute(
+                """
+                SELECT e.name, e.type 
+                FROM entities e
+                JOIN figure_entities fe ON e.id = fe.entity_id
+                WHERE fe.figure_id = ?
+                """,
+                (fig_id,)
+            ).fetchall()
+
+            if entities:
+                print(f"\nEntities ({len(entities)}):")
+                for name, etype in entities:
+                    print(f"  - {name} ({etype})")
+            else:
+                print("\nNo entities found for this figure")
+
+            print("-" * 40)
 
     # Print overall statistics
-    fig_count = db.conn.execute("SELECT COUNT(*) FROM figures").fetchone()[0]
     entity_count = db.conn.execute("SELECT COUNT(*) FROM entities").fetchone()[0]
     figure_entity_count = db.conn.execute("SELECT COUNT(*) FROM figure_entities").fetchone()[0]
 
     print("\n" + "=" * 80)
-    print(f"DATABASE STATISTICS:")
-    print(f"- Total Papers: {len(papers)}")
-    print(f"- Total Figures: {fig_count}")
+    print(f"Database Statistics:")
+    print(f"- Papers: {len(papers)}")
+    print(f"- Figures: {db.conn.execute('SELECT COUNT(*) FROM figures').fetchone()[0]}")
     print(f"- Unique Entities: {entity_count}")
     print(f"- Figure-Entity Links: {figure_entity_count}")
     print("=" * 80)
 
 
 if __name__ == "__main__":
-    # Process command line args
-    reset_db = "--reset" in sys.argv
-    display_only = "--display" in sys.argv
+    # Parse command line arguments
+    args = sys.argv[1:]
+    paper_ids = []
+    display_flag = False
+    reset_flag = False
 
-    if reset_db:
+    # Extract flags and paper IDs
+    for arg in args:
+        if arg == '--display':
+            display_flag = True
+        elif arg == '--reset':
+            reset_flag = True
+        else:
+            paper_ids.append(arg)
+
+    # Reset database if requested
+    if reset_flag:
         reset_database()
 
-    if display_only:
-        display_all_papers()
-        sys.exit(0)
+    # Process papers if any IDs were provided
+    success_count = 0
+    if paper_ids:
+        logger.info(f"Processing {len(paper_ids)} paper(s)...")
+        for paper_id in paper_ids:
+            if process_paper(paper_id):
+                success_count += 1
+        logger.info(f"Processed {success_count} out of {len(paper_ids)} papers successfully")
 
-    # Check if a sample IDs file was provided
-    file_path = None
-    for arg in sys.argv[1:]:
-        if arg.endswith(".txt") and os.path.isfile(arg):
-            file_path = arg
-            break
+    # Display database contents if requested or if no papers were processed
+    if display_flag or (not paper_ids and not reset_flag):
+        display_papers_data()
 
-    # Check if direct paper IDs were provided (not starting with --)
-    paper_ids = [arg for arg in sys.argv[1:] if not arg.startswith("--") and not arg.endswith(".txt")]
-
-    if not file_path and not paper_ids:
-        # Create a temporary file with sample PMC IDs
-        sample_ids = ["PMC1790863", "PMC7696669", "35871145"]  # Last one is a PMID
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as tmp:
-            tmp.write("\n".join(sample_ids))
-            file_path = tmp.name
-        logger.info(f"Created temporary file with sample IDs at {file_path}")
-
-    # Run the batch ingestion
-    if file_path:
-        print(f"Processing papers from file: {file_path}")
-        batch_ingest_from_file(file_path)
-
-        # Clean up temporary file if we created one
-        if "tmp" in locals():
-            os.unlink(file_path)
-    elif paper_ids:
-        print(f"Processing papers from command line: {', '.join(paper_ids)}")
-        batch_ingest(paper_ids)
-
-    # Display results
-    display_all_papers()
+    # If no arguments were provided, show usage
+    if not args:
+        print("Usage:")
+        print("  python test_batch_ingest.py [PMC_ID|PMID...] [--display] [--reset]")
+        print("")
+        print("Options:")
+        print("  PMC_ID|PMID    One or more paper IDs to process")
+        print("  --display      Display all papers in the database")
+        print("  --reset        Reset the database before processing")
