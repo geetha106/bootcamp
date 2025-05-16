@@ -62,13 +62,13 @@ python -m cli.cli ingest PMC1790863
 2. Batch ingestion from file:
 
 ```bash
-python -m cli.cli ingest paper_ids.txt
+python -m cli.cli ingest test.txt
 ```
 
 3. Batch ingestion of multiple IDs:
 
 ```bash
-python -m cli.cli batch PMC1790863 PMC7696669 35871145
+python -m cli.cli batch PMC7696669 17299597
 ```
 
 4. Testing batch ingestion:
@@ -83,8 +83,18 @@ python test_batch_ingest.py PMC1790863 PMC7696669 --display
 python test_batch_ingest.py --reset
 ```
 
-6. Watching a folder for new files:
+6. Display items in the database:
+
+```bash
+python test_batch_ingest.py --display
+```
+
+7. Watching a folder for new files:
 
 ```bash
 python -m cli.cli watch --folder-path data/watch --interval 30
 ```
+
+## Notes
+
+1. If we send in the PMCID and PMID for the same paper, as they both represent the same paper, Papers in the DB will be - 1 only.
