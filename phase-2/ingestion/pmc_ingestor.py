@@ -10,7 +10,11 @@ logger = get_logger("figurex.pmc")
 
 
 class PMCIngestor(BaseIngestor):
-    BASE_URL = "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi"
+
+    def __init__(self):
+        self.config = get_config()
+        self.BASE_URL = "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi"
+        self.api_key = self.config.get("api", {}).get("ncbi_api_key", "")
 
     def ingest(self, paper_id: str) -> Paper:
         """

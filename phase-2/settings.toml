@@ -9,6 +9,7 @@ db_path = "data/figurex.db"          # Path for DuckDB
 
 [api]
 api_key = "changeme123"              # For securing REST API
+ncbi_api_key = "cc993f3f6bfd306955b1ba60288a3c46ef08"        # Your NCBI API key
 
 [ingestion]
 watch_folder = "data/watch"          # Folder to monitor for new ID files

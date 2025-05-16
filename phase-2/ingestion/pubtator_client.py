@@ -8,7 +8,12 @@ logger = get_logger("figurex.pubtator")
 
 
 class PubTatorClient:
-    BASE_URL = "https://www.ncbi.nlm.nih.gov/research/pubtator3-api/publications/export/pubtator"
+
+    def __init__(self):
+        self.config = get_config()
+        self.BASE_URL = "https://www.ncbi.nlm.nih.gov/research/pubtator3-api/publication"
+        self.api_key = self.config.get("api", {}).get("ncbi_api_key", "")
+
 
     def fetch_entities(self, pmid_or_pmcid: str) -> List[Entity]:
         """
