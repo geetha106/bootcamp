@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from models.paper import Paper, Figure
 from ingestion.base import BaseIngestor
 from utils.logging import get_logger
+from config.config import get_config
 from collections import defaultdict
 
 logger = get_logger("figurex.pmc")
@@ -14,7 +15,7 @@ class PMCIngestor(BaseIngestor):
     def __init__(self):
         self.config = get_config()
         self.BASE_URL = "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi"
-        self.api_key = self.config.get("api", {}).get("ncbi_api_key", "")
+        self.api_key = self.config.api.ncbi_api_key
 
     def ingest(self, paper_id: str) -> Paper:
         """
