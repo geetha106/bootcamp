@@ -74,25 +74,31 @@ python -m cli.cli ingest test.txt
 python -m cli.cli batch PMC7696669 17299597
 ```
 
-4. Testing batch ingestion:
+4. To see terminal output in csv format:
 
 ```bash
-python test_batch_ingest.py PMC1790863 PMC7696669 --display
+python -m cli.cli batch PMC7696669 17299597 --format csv
 ```
 
-5. Resetting the database:
+5. To see terminal output in csv format:
+
+```bash
+python -m cli.cli batch PMC7696669 17299597 --format json
+```
+
+6. Resetting the database:
 
 ```bash
 python test_batch_ingest.py --reset
 ```
 
-6. Display items in the database:
+7. Display items in the database:
 
 ```bash
 python test_batch_ingest.py --display
 ```
 
-7. Watching a folder for new files:
+8. Watching a folder for new files:
 
 ```bash
 python -m cli.cli watch --folder-path data/watch --interval 30

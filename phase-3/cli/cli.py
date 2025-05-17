@@ -12,6 +12,12 @@ from utils.file_utils import (
     find_input_files
 )
 from utils.logging import get_logger
+from utils.export import BatchResultExporter
+from enum import Enum
+
+class OutputFormat(str, Enum):
+    JSON = "json"
+    CSV = "csv"
 
 cli = typer.Typer()
 logger = get_logger()
@@ -50,27 +56,42 @@ def ingest(paper_id: str):
 
 
 @cli.command()
-def batch(paper_ids: List[str] = typer.Argument(..., help="List of PMC IDs or PMIDs to process")):
+def batch(
+    paper_ids: List[str] = typer.Argument(..., help="List of PMC IDs or PMIDs to process"),
+    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output file path (optional)"),
+    format: OutputFormat = typer.Option(OutputFormat.JSON, "--format", "-f", help="Output format (json or csv)")
+):
     """
     Ingest multiple papers at once given their PMC IDs or PMIDs.
+    Optionally save the results to a file in JSON or CSV format.
     """
-    success_count = 0
-    failed_count = 0
+    exporter = BatchResultExporter()
+    exporter.start_timing()
+    results = []
 
     logger.info(f"Processing {len(paper_ids)} paper(s)...")
 
     for paper_id in paper_ids:
         logger.info(f"Processing paper ID: {paper_id}")
-        # Process paper and track results
-        result = processor.process(paper_id)
-        if result:
-            success_count += 1
+        # Process paper and collect results
+        result = processor.process_with_details(paper_id)
+        results.append(result)
+        
+        if result["status"] == "success":
             logger.info(f"Successfully processed paper: {paper_id}")
         else:
-            failed_count += 1
             logger.error(f"Failed to process paper: {paper_id}")
 
-    logger.info(f"Batch processing complete. Success: {success_count}, Failed: {failed_count}")
+    # Format the results
+    formatted_output = exporter.format_results(results, format.value)
+
+    # Output the results
+    if output:
+        with open(output, 'w') as f:
+            f.write(formatted_output)
+        logger.info(f"Results saved to {output}")
+    else:
+        print(formatted_output)
 
 @cli.command()
 def watch(
