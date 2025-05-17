@@ -73,24 +73,23 @@ class EntityMapper(EntityProcessor):
 
         for entity in entities:
             entity_text_lower = entity.text.lower()
+            start_position = -1  # Default to -1 if not found
 
             # Check if the entity text appears in the caption
             if entity_text_lower in caption_lower:
                 # Find all occurrences
                 positions = [m.start() for m in re.finditer(re.escape(entity_text_lower), caption_lower)]
                 if positions:
-                    # Copy the entity with its position in the caption
-                    new_entity = Entity(
-                        type=entity.type,
-                        text=entity.text,
-                        id=entity.id,
-                        position=positions[0]  # Use the first occurrence position
-                    )
-                    mapped_entities.append(new_entity)
-            else:
-                # If no exact match, keep the entity but mark it as unmapped
-                entity.position = -1
-                mapped_entities.append(entity)
+                    start_position = positions[0]  # Use the first occurrence position
+
+            # Create a new entity with the start position
+            new_entity = Entity(
+                text=entity.text,
+                type=entity.type,
+                start=start_position,
+                end=start_position + len(entity.text) if start_position >= 0 else -1
+            )
+            mapped_entities.append(new_entity)
 
         # Sort entities by their position in the caption
-        return sorted(mapped_entities, key=lambda e: e.position if e.position >= 0 else float('inf'))
+        return sorted(mapped_entities, key=lambda e: e.start if e.start >= 0 else float('inf'))

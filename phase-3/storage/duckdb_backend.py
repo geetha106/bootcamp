@@ -1,7 +1,8 @@
-# duckdb_backend.py
+# storage/duckdb_backend.py
 import duckdb
 import os
 from models.paper import Paper, Figure, Entity
+from typing import List
 from utils.logging import get_logger
 
 logger = get_logger("figurex.storage")
@@ -22,6 +23,80 @@ class DuckDBStorage:
         except Exception as e:
             logger.error(f"Error initializing schema: {e}")
             raise
+
+    def reset_db(self):
+        """Reset the database by dropping all tables and recreating them"""
+        try:
+            # Drop tables in the correct order to respect foreign key constraints
+            self.conn.execute("DROP TABLE IF EXISTS figure_entities")
+            self.conn.execute("DROP TABLE IF EXISTS entities")
+            self.conn.execute("DROP TABLE IF EXISTS figures")
+            self.conn.execute("DROP TABLE IF EXISTS papers")
+
+            # Reinitialize schema
+            self._initialize_schema()
+            logger.info("Database has been reset")
+        except Exception as e:
+            logger.error(f"Error resetting database: {e}")
+            raise
+
+    def get_papers(self) -> List[Paper]:
+        """
+        Get all papers from the database with their figures and entities
+        """
+        try:
+            # Get all papers
+            papers_result = self.conn.execute("""
+                SELECT id, paper_id, title, abstract, source 
+                FROM papers
+            """).fetchall()
+
+            papers = []
+            for paper_row in papers_result:
+                paper_id = paper_row[1]
+
+                # Get figures for this paper
+                figures_result = self.conn.execute("""
+                    SELECT id, label, caption, figure_url 
+                    FROM figures 
+                    WHERE paper_id = ?
+                """, (paper_id,)).fetchall()
+
+                figures = []
+                for fig_row in figures_result:
+                    fig_id = fig_row[0]
+
+                    # Get entities for this figure
+                    entities_result = self.conn.execute("""
+                        SELECT e.name, e.type
+                        FROM entities e
+                        JOIN figure_entities fe ON e.id = fe.entity_id
+                        WHERE fe.figure_id = ?
+                    """, (fig_id,)).fetchall()
+
+                    entities = [
+                        Entity(text=entity_row[0], type=entity_row[1])
+                        for entity_row in entities_result
+                    ]
+
+                    figures.append(Figure(
+                        label=fig_row[1],
+                        caption=fig_row[2],
+                        url=fig_row[3],
+                        entities=entities
+                    ))
+
+                papers.append(Paper(
+                    paper_id=paper_id,
+                    title=paper_row[2],
+                    abstract=paper_row[3],
+                    figures=figures
+                ))
+
+            return papers
+        except Exception as e:
+            logger.error(f"Error getting papers: {e}")
+            return []
 
     def save_paper(self, paper: Paper):
         """
