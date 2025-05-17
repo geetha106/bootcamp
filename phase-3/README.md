@@ -77,13 +77,14 @@ python -m cli.cli batch PMC7696669 17299597
 4. To see terminal output in csv format:
 
 ```bash
-python -m cli.cli batch PMC7696669 17299597 --format csv
+python -m cli.cli batch PMC7696669 29355051 --format csv
 ```
 
 5. To see terminal output in csv format:
 
 ```bash
 python -m cli.cli batch PMC7696669 17299597 --format json
+python -m cli.cli batch PMC7696669 29355051 --output results.json
 ```
 
 6. Resetting the database:

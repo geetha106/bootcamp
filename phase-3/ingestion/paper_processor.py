@@ -134,8 +134,7 @@ class PaperProcessor:
                     "entities": [
                         {
                             "entity": entity.text,
-                            "type": entity.type,
-                            "identifier": entity.identifier if hasattr(entity, 'identifier') else None
+                            "type": entity.type
                         }
                         for entity in fig.entities
                     ]

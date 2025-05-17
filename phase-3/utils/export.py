@@ -33,11 +33,11 @@ class ResultFormatter:
         header = [
             "Paper ID", "Source", "Status", "Title", "Abstract",
             "Figure ID", "Caption", "Figure URL",
-            "Entity 1", "Entity 1 Type", "Entity 1 ID",
-            "Entity 2", "Entity 2 Type", "Entity 2 ID",
-            "Entity 3", "Entity 3 Type", "Entity 3 ID",
-            "Entity 4", "Entity 4 Type", "Entity 4 ID",
-            "Entity 5", "Entity 5 Type", "Entity 5 ID"
+            "Entity 1", "Entity 1 Type",
+            "Entity 2", "Entity 2 Type",
+            "Entity 3", "Entity 3 Type",
+            "Entity 4", "Entity 4 Type",
+            "Entity 5", "Entity 5 Type"
         ]
         writer.writerow(header)
 
@@ -52,7 +52,7 @@ class ResultFormatter:
                     result.get("title", ""),
                     result.get("abstract", ""),
                     "", "", "",  # Figure ID, Caption, URL
-                    *["" for _ in range(15)]  # Empty entity columns
+                    *["" for _ in range(10)]  # Empty entity columns (5 entities * 2 fields)
                 ])
             else:
                 # Write each figure as a separate row
@@ -76,11 +76,10 @@ class ResultFormatter:
                             entity = entities[i]
                             row_data.extend([
                                 entity.get("entity", ""),
-                                entity.get("type", ""),
-                                entity.get("identifier", "")
+                                entity.get("type", "")
                             ])
                         else:
-                            row_data.extend(["", "", ""])  # Empty entity slot
+                            row_data.extend(["", ""])  # Empty entity slot
 
                     writer.writerow(row_data)
 

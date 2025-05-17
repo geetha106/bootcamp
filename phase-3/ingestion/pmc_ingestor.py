@@ -7,6 +7,7 @@ from ingestion.base import BaseIngestor
 from utils.logging import get_logger
 from config.config import get_config
 from collections import defaultdict
+import re
 
 logger = get_logger("figurex.pmc")
 
@@ -62,7 +63,7 @@ class PMCIngestor(BaseIngestor):
         abstract = None
 
         # Use defaultdict to collect all passages for each figure
-        figure_data = defaultdict(lambda: {"label": "Unknown Figure", "caption": ""})
+        figure_data = defaultdict(lambda: {"label": "", "caption": ""})
 
         for document in root.findall(".//document"):
             for passage in document.findall("passage"):
@@ -91,7 +92,6 @@ class PMCIngestor(BaseIngestor):
                     if not fig_id and "figure_title" in infons:
                         # Extract numeric part from figure title to create an ID
                         fig_title = infons.get("figure_title", "")
-                        import re
                         match = re.search(r'(\d+)', fig_title)
                         if match:
                             fig_id = f"fig{match.group(1)}"
@@ -100,7 +100,7 @@ class PMCIngestor(BaseIngestor):
 
                     # If still no ID, use a counter (last resort)
                     if not fig_id:
-                        fig_id = f"unknown_fig_{len(figure_data) + 1}"
+                        fig_id = f"fig_{len(figure_data) + 1}"
 
                     # Update figure data
                     if "figure_title" in infons:
@@ -114,10 +114,15 @@ class PMCIngestor(BaseIngestor):
 
         # Convert collected figure data to Figure objects
         figures = []
-        for fig_id, data in figure_data.items():
+        # Sort by any numeric part in the fig_id to maintain order
+        sorted_fig_ids = sorted(figure_data.keys(), 
+                              key=lambda x: int(re.search(r'\d+', x).group()) if re.search(r'\d+', x) else float('inf'))
+        
+        for i, fig_id in enumerate(sorted_fig_ids, 1):
+            data = figure_data[fig_id]
             figure_url = None  # No URL in BioC, maybe construct using known patterns or skip
             figures.append(Figure(
-                label=data["label"],
+                label=f"Figure {i}",  # Use sequential numbering
                 caption=data["caption"],
                 url=figure_url
             ))
