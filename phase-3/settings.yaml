@@ -6,6 +6,9 @@ general:
 storage:
   backend: "duckdb"
   db_path: "data/figurex.db"         # Path for DuckDB
+  cache_enabled: true
+  cache_ttl: 86400  # 24 hours in seconds
+  auto_update_schema: true
 
 api:
   api_key: "changeme123"             # For securing REST API
@@ -16,3 +19,39 @@ ingestion:
 
 ncbi:
   api_key: "your_ncbi_api_key_here"  # Replace with your actual NCBI API key
+  pmc_base_url: "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi"
+  pubtator_base_url: "https://www.ncbi.nlm.nih.gov/research/pubtator3-api/publications/export/pubtator"
+  request_timeout: 30
+  retry_attempts: 3
+  retry_delay: 1
+
+processing:
+  max_entities_per_figure: 50
+  min_entity_confidence: 0.5
+  entity_types:
+    - "Gene"
+    - "Disease"
+    - "Chemical"
+    - "Species"
+    - "Mutation"
+  caption_cleanup_enabled: true
+  parallel_processing: false
+  batch_size: 10
+
+output:
+  formats:
+    - "json"
+    - "csv"
+  max_entities_in_csv: 5
+  output_dir: "data/output"
+  include_summary: true
+  pretty_print_json: true
+  csv_delimiter: ","
+
+logging:
+  level: "INFO"
+  file_path: "logs/figurex.log"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  rotate_logs: true
+  max_log_size: 10485760  # 10MB
+  backup_count: 5

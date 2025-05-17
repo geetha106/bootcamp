@@ -56,41 +56,50 @@ python -m scripts.inspect_db
 ```
 
 ## Sample usage examples for the batch processing functionality
-1. Single paper ingestion:
+
+1. Batch ingestion from file:
 
 ```bash
-python -m cli.cli ingest PMC1790863
+python -m cli.cli batch test.txt
 ```
 
-2. Batch ingestion from file:
-
-```bash
-python -m cli.cli ingest test.txt
-```
-
-3. Batch ingestion of multiple IDs:
+2. Batch ingestion of multiple IDs:
 
 ```bash
 python -m cli.cli batch PMC7696669 17299597
 ```
 
-4. To see terminal output in csv format:
+3. To see terminal output in csv format:
 
 ```bash
 python -m cli.cli batch PMC7696669 29355051 --format csv
 ```
 
-5. To see terminal output in csv format:
+4. To see terminal output in json format:
 
 ```bash
 python -m cli.cli batch PMC7696669 17299597 --format json
+```
+
+5. To save the output to a file
+
+```bash
 python -m cli.cli batch PMC7696669 29355051 --output results.json
+```
+
+```bash
+python -m cli.cli batch PMC7696669 29355051 --output results.csv
 ```
 
 6. Resetting the database:
 
 ```bash
-python test_batch_ingest.py --reset
+python -m cli.cli reset
+```
+Force rest without confirmation
+
+```bash
+python -m cli.cli reset --force
 ```
 
 7. Display items in the database:

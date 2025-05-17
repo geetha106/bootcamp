@@ -14,6 +14,8 @@ from utils.file_utils import (
 from utils.logging import get_logger
 from utils.export import BatchResultExporter
 from enum import Enum
+from storage.duckdb_backend import DuckDBStorage
+from config.config import get_config
 
 class OutputFormat(str, Enum):
     JSON = "json"
@@ -38,38 +40,55 @@ def process_paper(paper_id: str) -> bool:
 
 
 @cli.command()
-def ingest(paper_id: str):
+def reset(
+    force: bool = typer.Option(False, "--force", "-f", help="Force reset without confirmation")
+):
     """
-    Ingest a paper using either a PMC ID or PMID.
+    Reset the database by dropping all tables and recreating them.
+    This will delete all stored papers, figures, and entities.
+    """
+    if not force:
+        confirm = typer.confirm("This will delete all data in the database. Are you sure?")
+        if not confirm:
+            logger.info("Database reset cancelled")
+            raise typer.Exit()
 
-    If PMID is provided, it will be converted to PMC ID for fetching from PMC.
-    If a text file with paper IDs is provided, all papers in the file will be ingested.
-    """
-    # Check if paper_id is a file path
-    if paper_id.endswith('.txt') and os.path.exists(paper_id):
-        logger.info(f"Processing paper IDs from file: {paper_id}")
-        success_count, failed_count = process_file(paper_id, processor.process)
-    else:
-        # Process a single paper ID
-        result = processor.process(paper_id)
-        logger.info(f"Paper processing {'successful' if result else 'failed'}")
+    try:
+        config = get_config()
+        storage = DuckDBStorage(config.storage.db_path)
+        storage.reset_db()
+        logger.info("Database has been reset successfully")
+    except Exception as e:
+        logger.error(f"Error resetting database: {e}")
+        raise typer.Exit(1)
 
 
 @cli.command()
 def batch(
-    paper_ids: List[str] = typer.Argument(..., help="List of PMC IDs or PMIDs to process"),
+    input_file: str = typer.Argument(..., help="Path to text file containing PMC IDs or PMIDs (one per line)"),
     output: Optional[str] = typer.Option(None, "--output", "-o", help="Output file path (optional)"),
     format: OutputFormat = typer.Option(OutputFormat.JSON, "--format", "-f", help="Output format (json or csv)")
 ):
     """
-    Ingest multiple papers at once given their PMC IDs or PMIDs.
+    Process multiple papers from a text file containing PMC IDs or PMIDs (one per line).
     Optionally save the results to a file in JSON or CSV format.
     """
+    # Check if input file exists
+    if not os.path.exists(input_file):
+        logger.error(f"Input file not found: {input_file}")
+        raise typer.Exit(1)
+
+    # Read paper IDs from file
+    paper_ids = read_ids_from_file(input_file)
+    if not paper_ids:
+        logger.error("No paper IDs found in the input file")
+        raise typer.Exit(1)
+
     exporter = BatchResultExporter()
     exporter.start_timing()
     results = []
 
-    logger.info(f"Processing {len(paper_ids)} paper(s)...")
+    logger.info(f"Processing {len(paper_ids)} paper(s) from {input_file}...")
 
     for paper_id in paper_ids:
         logger.info(f"Processing paper ID: {paper_id}")
@@ -87,6 +106,7 @@ def batch(
 
     # Output the results
     if output:
+        os.makedirs(os.path.dirname(output) or '.', exist_ok=True)
         with open(output, 'w') as f:
             f.write(formatted_output)
         logger.info(f"Results saved to {output}")

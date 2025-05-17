@@ -4,13 +4,16 @@ import io
 import time
 from typing import List, Dict, Any
 from datetime import datetime
+from config.config import get_config
 
 
 class ResultFormatter:
     """Handles formatting of paper processing results into different output formats."""
 
-    @staticmethod
-    def format_json(results: List[Dict[str, Any]], processing_time: float) -> str:
+    def __init__(self):
+        self.config = get_config()
+
+    def format_json(self, results: List[Dict[str, Any]], processing_time: float) -> str:
         """Format results as a JSON string."""
         output = {
             "results": results,
@@ -21,24 +24,28 @@ class ResultFormatter:
                 "processing_time": round(processing_time, 2)
             }
         }
-        return json.dumps(output, indent=2)
+        
+        if not self.config.output.include_summary:
+            output.pop("summary")
 
-    @staticmethod
-    def format_csv(results: List[Dict[str, Any]], processing_time: float) -> str:
+        return json.dumps(output, indent=2 if self.config.output.pretty_print_json else None)
+
+    def format_csv(self, results: List[Dict[str, Any]], processing_time: float) -> str:
         """Format results as a CSV string with Excel-friendly formatting."""
         output = io.StringIO()
-        writer = csv.writer(output)
+        writer = csv.writer(output, delimiter=self.config.output.csv_delimiter)
 
         # Write header with separate columns for entity information
         header = [
             "Paper ID", "Source", "Status", "Title", "Abstract",
-            "Figure ID", "Caption", "Figure URL",
-            "Entity 1", "Entity 1 Type",
-            "Entity 2", "Entity 2 Type",
-            "Entity 3", "Entity 3 Type",
-            "Entity 4", "Entity 4 Type",
-            "Entity 5", "Entity 5 Type"
+            "Figure ID", "Caption", "Figure URL"
         ]
+
+        # Add entity columns based on configuration
+        max_entities = self.config.output.max_entities_in_csv
+        for i in range(1, max_entities + 1):
+            header.extend([f"Entity {i}", f"Entity {i} Type"])
+
         writer.writerow(header)
 
         # Write data
@@ -52,7 +59,7 @@ class ResultFormatter:
                     result.get("title", ""),
                     result.get("abstract", ""),
                     "", "", "",  # Figure ID, Caption, URL
-                    *["" for _ in range(10)]  # Empty entity columns (5 entities * 2 fields)
+                    *["" for _ in range(max_entities * 2)]  # Empty entity columns
                 ])
             else:
                 # Write each figure as a separate row
@@ -69,9 +76,9 @@ class ResultFormatter:
                         figure.get("figure_url", "")
                     ]
 
-                    # Add entity information (up to 5 entities)
+                    # Add entity information (up to max_entities)
                     entities = figure.get("entities", [])
-                    for i in range(5):  # Handle up to 5 entities
+                    for i in range(max_entities):
                         if i < len(entities):
                             entity = entities[i]
                             row_data.extend([
@@ -83,14 +90,15 @@ class ResultFormatter:
 
                     writer.writerow(row_data)
 
-        # Write summary as a separate section with blank rows for clarity
-        writer.writerow([])
-        writer.writerow([])
-        writer.writerow(["Processing Summary"])
-        writer.writerow(["Total Papers Requested", len(results)])
-        writer.writerow(["Successfully Processed", sum(1 for r in results if r.get("status") == "success")])
-        writer.writerow(["Failed to Process", sum(1 for r in results if r.get("status") == "error")])
-        writer.writerow(["Total Processing Time (seconds)", round(processing_time, 2)])
+        # Write summary if enabled
+        if self.config.output.include_summary:
+            writer.writerow([])
+            writer.writerow([])
+            writer.writerow(["Processing Summary"])
+            writer.writerow(["Total Papers Requested", len(results)])
+            writer.writerow(["Successfully Processed", sum(1 for r in results if r.get("status") == "success")])
+            writer.writerow(["Failed to Process", sum(1 for r in results if r.get("status") == "error")])
+            writer.writerow(["Total Processing Time (seconds)", round(processing_time, 2)])
 
         return output.getvalue()
 
@@ -101,6 +109,7 @@ class BatchResultExporter:
     def __init__(self):
         self.formatter = ResultFormatter()
         self.start_time = None
+        self.config = get_config()
 
     def start_timing(self):
         """Start timing the batch processing."""
@@ -113,9 +122,13 @@ class BatchResultExporter:
 
         processing_time = time.time() - self.start_time
 
-        if format_type.lower() == "json":
+        format_type = format_type.lower()
+        if format_type not in self.config.output.formats:
+            raise ValueError(f"Unsupported format type: {format_type}. Allowed formats: {self.config.output.formats}")
+
+        if format_type == "json":
             return self.formatter.format_json(results, processing_time)
-        elif format_type.lower() == "csv":
+        elif format_type == "csv":
             return self.formatter.format_csv(results, processing_time)
         else:
             raise ValueError(f"Unsupported format type: {format_type}") 
