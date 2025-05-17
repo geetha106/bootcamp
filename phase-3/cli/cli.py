@@ -1,7 +1,5 @@
 # cli.py
 import typer
-import csv
-import json
 import requests
 import re
 import time
@@ -208,68 +206,6 @@ def batch(paper_ids: List[str]):
             failed_count += 1
 
     logger.info(f"Batch processing complete. Success: {success_count}, Failed: {failed_count}")
-
-
-def export_results(paper_ids: List[str], format: str = "json"):
-    """Export the processed papers in the specified format."""
-    storage = DuckDBStorage()
-
-    # Get all paper data
-    papers_data = []
-    for paper_id in paper_ids:
-        try:
-            # Retrieve the paper and its related data from storage
-            paper_data = storage.get_paper_with_figures_and_entities(paper_id)
-            if paper_data:
-                papers_data.append(paper_data)
-            else:
-                logger.warning(f"No data found for paper ID: {paper_id}")
-        except Exception as e:
-            logger.error(f"Error retrieving data for {paper_id}: {str(e)}")
-
-    if not papers_data:
-        logger.warning("No data to export")
-        return
-
-    # Export based on format
-    if format.lower() == "json":
-        export_as_json(papers_data)
-    elif format.lower() == "csv":
-        export_as_csv(papers_data)
-    else:
-        logger.error(f"Unsupported export format: {format}")
-
-
-def export_as_json(papers_data: List[dict]):
-    """Export papers data as JSON to stdout."""
-    json_str = json.dumps(papers_data, indent=2)
-    print(json_str)
-
-
-def export_as_csv(papers_data: List[dict]):
-    """Export papers data as CSV to stdout."""
-    if not papers_data:
-        return
-
-    # Create flattened data for CSV export
-    csv_rows = []
-    for paper in papers_data:
-        for figure in paper.get("figures", []):
-            entities = ", ".join([entity.get("text", "") for entity in figure.get("entities", [])])
-            csv_rows.append({
-                "paper_id": paper.get("paper_id", ""),
-                "title": paper.get("title", ""),
-                "figure_label": figure.get("label", ""),
-                "caption": figure.get("caption", ""),
-                "figure_url": figure.get("url", ""),
-                "entities": entities
-            })
-
-    if csv_rows:
-        writer = csv.DictWriter(sys.stdout, fieldnames=csv_rows[0].keys())
-        writer.writeheader()
-        for row in csv_rows:
-            writer.writerow(row)
 
 
 @cli.command()
