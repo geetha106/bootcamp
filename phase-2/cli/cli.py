@@ -11,7 +11,6 @@ from ingestion.pmc_ingestor import PMCIngestor
 from ingestion.pubtator_client import PubTatorClient
 from storage.duckdb_backend import DuckDBStorage
 from utils.logging import get_logger
-import time  # Added for retry with delay
 
 cli = typer.Typer()
 logger = get_logger()
