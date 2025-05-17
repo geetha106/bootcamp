@@ -2,7 +2,7 @@
 import duckdb
 import os
 from models.paper import Paper, Figure, Entity
-from typing import List
+from typing import List, Optional, Tuple
 from utils.logging import get_logger
 
 logger = get_logger("figurex.storage")
@@ -224,3 +224,109 @@ class DuckDBStorage:
         """Get the next available ID for a table"""
         result = self.conn.execute(f"SELECT COALESCE(MAX(id), 0) + 1 FROM {table_name}").fetchone()
         return result[0]
+
+    def get_paper_with_details(self, paper_id: str) -> Optional[Paper]:
+        """
+        Get a paper with all its figures and entities from the database.
+        Returns None if the paper doesn't exist.
+        """
+        try:
+            # Get paper details
+            paper_result = self.conn.execute("""
+                SELECT id, paper_id, title, abstract, source 
+                FROM papers 
+                WHERE paper_id = ?
+            """, (paper_id,)).fetchone()
+
+            if not paper_result:
+                return None
+
+            # Get figures for this paper
+            figures_result = self.conn.execute("""
+                SELECT id, label, caption, figure_url 
+                FROM figures 
+                WHERE paper_id = ?
+                ORDER BY label  -- Ensure figures are in order
+            """, (paper_id,)).fetchall()
+
+            figures = []
+            for fig_row in figures_result:
+                fig_id = fig_row[0]
+
+                # Get entities for this figure
+                entities_result = self.conn.execute("""
+                    SELECT e.id, e.name, e.type
+                    FROM entities e
+                    JOIN figure_entities fe ON e.id = fe.entity_id
+                    WHERE fe.figure_id = ?
+                """, (fig_id,)).fetchall()
+
+                entities = [
+                    Entity(
+                        text=entity_row[1],
+                        type=entity_row[2],
+                        start=-1,  # Default to -1 as these may not be stored
+                        end=-1  # Default to -1 as these may not be stored
+                    )
+                    for entity_row in entities_result
+                ]
+
+                figures.append(Figure(
+                    label=fig_row[1],
+                    caption=fig_row[2],
+                    url=fig_row[3],
+                    entities=entities
+                ))
+
+            return Paper(
+                paper_id=paper_id,
+                title=paper_result[2],
+                abstract=paper_result[3],
+                figures=figures
+            )
+
+        except Exception as e:
+            logger.error(f"Error retrieving paper {paper_id}: {e}")
+            return None
+
+    def check_paper_completeness(self, paper_id: str) -> Tuple[bool, str]:
+        """
+        Check if a paper exists in the database and has complete data.
+        
+        Returns:
+            Tuple[bool, str]: (is_complete, reason)
+            - is_complete: True if paper exists and has all required data
+            - reason: Description of why the paper is incomplete or "complete"
+        """
+        try:
+            # Check if paper exists
+            paper_result = self.conn.execute("""
+                SELECT p.id, p.title, p.abstract,
+                       COUNT(DISTINCT f.id) as figure_count,
+                       COUNT(DISTINCT fe.id) as entity_count
+                FROM papers p
+                LEFT JOIN figures f ON p.paper_id = f.paper_id
+                LEFT JOIN figure_entities fe ON f.id = fe.figure_id
+                WHERE p.paper_id = ?
+                GROUP BY p.id, p.title, p.abstract
+            """, (paper_id,)).fetchone()
+
+            if not paper_result:
+                return False, "Paper not found in database"
+
+            paper_id, title, abstract, figure_count, entity_count = paper_result
+
+            if not title or not abstract:
+                return False, "Missing title or abstract"
+
+            if figure_count == 0:
+                return False, "No figures found"
+
+            if entity_count == 0:
+                return False, "No entities found"
+
+            return True, "complete"
+
+        except Exception as e:
+            logger.error(f"Error checking paper completeness for {paper_id}: {e}")
+            return False, f"Database error: {str(e)}"
