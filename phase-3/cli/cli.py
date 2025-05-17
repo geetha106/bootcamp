@@ -72,12 +72,6 @@ def batch(paper_ids: List[str] = typer.Argument(..., help="List of PMC IDs or PM
 
     logger.info(f"Batch processing complete. Success: {success_count}, Failed: {failed_count}")
 
-    # Optional: Display results for debugging
-    papers = processor.storage.get_papers()
-    logger.info(f"Found {len(papers)} papers in database")
-    for paper in papers:
-        logger.info(f"- Paper {paper.paper_id}: {len(paper.figures)} figures")
-
 @cli.command()
 def watch(
         folder_path: str = typer.Option("data/watch", "--folder-path", help="Path to watch for paper ID files"),
