@@ -50,7 +50,7 @@ def ingest(paper_id: str):
 
 
 @cli.command()
-def batch(paper_ids: List[str]):
+def batch(paper_ids: List[str] = typer.Argument(..., help="List of PMC IDs or PMIDs to process")):
     """
     Ingest multiple papers at once given their PMC IDs or PMIDs.
     """
@@ -60,6 +60,7 @@ def batch(paper_ids: List[str]):
     logger.info(f"Processing {len(paper_ids)} paper(s)...")
 
     for paper_id in paper_ids:
+        logger.info(f"Processing paper ID: {paper_id}")
         if processor.process(paper_id):
             success_count += 1
         else:

@@ -10,6 +10,8 @@ figurex/                         # PyPI package root
 │   └── config.py                # Pydantic-based config handling
 ├── ingestion/                   # Ingestion logic for PMC, PMID, etc.
 │   ├── base.py 
+│   ├── id_converter.py
+│   ├── paper_processor.py
 │   ├── pmc_ingestor.py          # PMC BioC ingestion logic
 │   ├── pubtator_client.py       # PubTator entity extraction logic
 │   └── watcher.py               # Watched folder ingestion logic
@@ -43,6 +45,7 @@ figurex/                         # PyPI package root
     ├── test_ingestion.py
     ├── test_api.py
     ├── test_storage.py
+    ├── test_batch_ingestion.py
     
 ```
 
