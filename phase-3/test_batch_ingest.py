@@ -1,134 +1,82 @@
-#!/usr/bin/env python
 # test_batch_ingest.py
 
-import os
+import argparse
 import sys
-from cli.cli import process_paper
+from pathlib import Path
+import typer
+from typing import List, Optional
+
+# Import from the new modular structure
+from ingestion.paper_processor import PaperProcessor
 from storage.duckdb_backend import DuckDBStorage
 from utils.logging import get_logger
 
-logger = get_logger("test_batch")
+logger = get_logger()
 
 
-def reset_database():
-    """Delete the database file to start fresh"""
-    db_path = "data/figurex.db"
-    if os.path.exists(db_path):
-        os.remove(db_path)
-        logger.info(f"Removed existing database at {db_path}")
-    else:
-        logger.info(f"No existing database found at {db_path}")
+def main(paper_ids: List[str] = [], reset: bool = False, display: bool = False):
+    """
+    Test batch ingestion of papers
 
+    Args:
+        paper_ids: List of PMC IDs or PMIDs to process
+        reset: Whether to reset the database
+        display: Whether to display the database contents
+    """
+    storage = DuckDBStorage()
 
-def display_papers_data():
-    """Display all papers from the database"""
-    db = DuckDBStorage()
+    if reset:
+        logger.info("Resetting database...")
+        storage.reset_db()
+        logger.info("Database reset complete")
 
-    # Get all papers
-    papers = db.conn.execute(
-        "SELECT * FROM papers"
-    ).fetchall()
+    if display:
+        logger.info("Displaying database contents...")
+        papers = storage.get_papers()
 
-    if not papers:
-        logger.error("No papers found in database")
-        return
+        if not papers:
+            logger.info("No papers found in database")
+        else:
+            logger.info(f"Found {len(papers)} papers:")
+            for paper in papers:
+                logger.info(f"Paper: {paper.title} (PMC ID: {paper.pmc_id})")
+                logger.info(f"  Abstract: {paper.abstract[:100]}...")
+                logger.info(f"  Figures: {len(paper.figures)}")
+                for fig in paper.figures:
+                    logger.info(f"    {fig.label}: {fig.caption[:50]}...")
+                    logger.info(f"    Entities: {len(fig.entities)}")
+                    for entity in fig.entities[:5]:  # Show only first 5 entities
+                        logger.info(f"      {entity.type}: {entity.text}")
+                    if len(fig.entities) > 5:
+                        logger.info(f"      ... and {len(fig.entities) - 5} more entities")
 
-    print(f"\nFound {len(papers)} papers in database:")
+    if paper_ids:
+        logger.info(f"Processing {len(paper_ids)} paper(s)...")
+        processor = PaperProcessor()
+        success_count = 0
+        failed_count = 0
 
-    for paper_data in papers:
-        print("\n" + "=" * 80)
-        print(f"PAPER: {paper_data[2]}")
-        print(f"ID: {paper_data[1]}")
-        print("-" * 80)
-        print(f"Abstract: {paper_data[3][:200]}..." if paper_data[3] else "No abstract available")
-        print("=" * 80)
-
-        # Get figures for this paper
-        figures = db.conn.execute(
-            "SELECT * FROM figures WHERE paper_id = ?",
-            (paper_data[1],)
-        ).fetchall()
-
-        print(f"\nFound {len(figures)} figures:")
-
-        for fig in figures:
-            fig_id, paper_id, label, caption, url = fig
-            print(f"\n[Figure {fig_id}]")
-            print(f"Label: {label}")
-            print(f"Caption: {caption[:100]}..." if caption else "No caption available")
-
-            # Get entities for this figure
-            entities = db.conn.execute(
-                """
-                SELECT e.name, e.type 
-                FROM entities e
-                JOIN figure_entities fe ON e.id = fe.entity_id
-                WHERE fe.figure_id = ?
-                """,
-                (fig_id,)
-            ).fetchall()
-
-            if entities:
-                print(f"\nEntities ({len(entities)}):")
-                for name, etype in entities:
-                    print(f"  - {name} ({etype})")
+        for paper_id in paper_ids:
+            if processor.process(paper_id):
+                success_count += 1
             else:
-                print("\nNo entities found for this figure")
+                failed_count += 1
 
-            print("-" * 40)
+        logger.info(f"Batch processing complete. Success: {success_count}, Failed: {failed_count}")
 
-    # Print overall statistics
-    entity_count = db.conn.execute("SELECT COUNT(*) FROM entities").fetchone()[0]
-    figure_entity_count = db.conn.execute("SELECT COUNT(*) FROM figure_entities").fetchone()[0]
-
-    print("\n" + "=" * 80)
-    print(f"Database Statistics:")
-    print(f"- Papers: {len(papers)}")
-    print(f"- Figures: {db.conn.execute('SELECT COUNT(*) FROM figures').fetchone()[0]}")
-    print(f"- Unique Entities: {entity_count}")
-    print(f"- Figure-Entity Links: {figure_entity_count}")
-    print("=" * 80)
+        if display:
+            logger.info("Displaying updated database contents...")
+            papers = storage.get_papers()
+            logger.info(f"Found {len(papers)} papers after processing")
 
 
 if __name__ == "__main__":
-    # Parse command line arguments
-    args = sys.argv[1:]
-    paper_ids = []
-    display_flag = False
-    reset_flag = False
+    # Parse arguments using argparse to maintain compatibility
+    parser = argparse.ArgumentParser(description="Test batch ingestion of papers")
+    parser.add_argument("paper_ids", nargs="*", help="List of PMC IDs or PMIDs to process")
+    parser.add_argument("--reset", action="store_true", help="Reset the database")
+    parser.add_argument("--display", action="store_true", help="Display database contents")
 
-    # Extract flags and paper IDs
-    for arg in args:
-        if arg == '--display':
-            display_flag = True
-        elif arg == '--reset':
-            reset_flag = True
-        else:
-            paper_ids.append(arg)
+    args = parser.parse_args()
 
-    # Reset database if requested
-    if reset_flag:
-        reset_database()
-
-    # Process papers if any IDs were provided
-    success_count = 0
-    if paper_ids:
-        logger.info(f"Processing {len(paper_ids)} paper(s)...")
-        for paper_id in paper_ids:
-            if process_paper(paper_id):
-                success_count += 1
-        logger.info(f"Processed {success_count} out of {len(paper_ids)} papers successfully")
-
-    # Display database contents if requested or if no papers were processed
-    if display_flag or (not paper_ids and not reset_flag):
-        display_papers_data()
-
-    # If no arguments were provided, show usage
-    if not args:
-        print("Usage:")
-        print("  python test_batch_ingest.py [PMC_ID|PMID...] [--display] [--reset]")
-        print("")
-        print("Options:")
-        print("  PMC_ID|PMID    One or more paper IDs to process")
-        print("  --display      Display all papers in the database")
-        print("  --reset        Reset the database before processing")
+    main(paper_ids=args.paper_ids, reset=args.reset, display=args.display)
