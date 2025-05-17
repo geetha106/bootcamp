@@ -13,28 +13,15 @@ logger = get_logger("figurex.pmc")
 
 
 class PMCIngestor(BaseIngestor):
-    BASE_URL = "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi"
-
     def __init__(self):
         """Initialize the PMC ingestor with API key from settings"""
-        self.api_key = self._get_api_key()
+        config = get_config()
+        self.base_url = config.ncbi.pmc_base_url
+        self.api_key = config.ncbi.api_key
         if self.api_key:
             logger.info("PMC ingestor initialized with NCBI API key")
         else:
             logger.warning("No NCBI API key found - rate limiting will be strict")
-
-    def _get_api_key(self):
-        """Get the NCBI API key from settings.yaml"""
-        try:
-            # Load settings from yaml file
-            with open("settings.yaml", "r") as f:
-                settings = yaml.safe_load(f)
-
-            # Extract NCBI API key if available
-            return settings.get("ncbi", {}).get("api_key")
-        except Exception as e:
-            logger.error(f"Error loading API key from settings: {e}")
-            return None
 
     def ingest(self, paper_id: str) -> Paper:
         """
@@ -47,7 +34,7 @@ class PMCIngestor(BaseIngestor):
         if not pmc_id.startswith("PMC"):
             pmc_id = f"PMC{pmc_id}"
 
-        url = f"{self.BASE_URL}/BioC_xml/{pmc_id}/unicode"
+        url = f"{self.base_url}/BioC_xml/{pmc_id}/unicode"
         logger.info(f"Fetching from URL: {url}")
 
         response = requests.get(url)

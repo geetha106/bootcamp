@@ -65,6 +65,46 @@ def reset(
 
 @cli.command()
 def batch(
+    paper_ids: List[str] = typer.Argument(..., help="One or more PMC IDs or PMIDs to process"),
+    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output file path (optional)"),
+    format: OutputFormat = typer.Option(OutputFormat.JSON, "--format", "-f", help="Output format (json or csv)")
+):
+    """
+    Process one or more papers by their PMC IDs or PMIDs.
+    Optionally save the results to a file in JSON or CSV format.
+    """
+    exporter = BatchResultExporter()
+    exporter.start_timing()
+    results = []
+
+    logger.info(f"Processing {len(paper_ids)} paper(s)...")
+
+    for paper_id in paper_ids:
+        logger.info(f"Processing paper ID: {paper_id}")
+        # Process paper and collect results
+        result = processor.process_with_details(paper_id)
+        results.append(result)
+        
+        if result["status"] == "success":
+            logger.info(f"Successfully processed paper: {paper_id}")
+        else:
+            logger.error(f"Failed to process paper: {paper_id}")
+
+    # Format the results
+    formatted_output = exporter.format_results(results, format.value)
+
+    # Output the results
+    if output:
+        os.makedirs(os.path.dirname(output) or '.', exist_ok=True)
+        with open(output, 'w') as f:
+            f.write(formatted_output)
+        logger.info(f"Results saved to {output}")
+    else:
+        print(formatted_output)
+
+
+@cli.command()
+def ingest(
     input_file: str = typer.Argument(..., help="Path to text file containing PMC IDs or PMIDs (one per line)"),
     output: Optional[str] = typer.Option(None, "--output", "-o", help="Output file path (optional)"),
     format: OutputFormat = typer.Option(OutputFormat.JSON, "--format", "-f", help="Output format (json or csv)")

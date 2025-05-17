@@ -60,7 +60,7 @@ python -m scripts.inspect_db
 1. Batch ingestion from file:
 
 ```bash
-python -m cli.cli batch test.txt
+python -m cli.cli ingest test.txt
 ```
 
 2. Batch ingestion of multiple IDs:
