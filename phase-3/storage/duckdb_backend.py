@@ -68,14 +68,19 @@ class DuckDBStorage:
 
                     # Get entities for this figure
                     entities_result = self.conn.execute("""
-                        SELECT e.name, e.type
+                        SELECT e.id, e.name, e.type
                         FROM entities e
                         JOIN figure_entities fe ON e.id = fe.entity_id
                         WHERE fe.figure_id = ?
                     """, (fig_id,)).fetchall()
 
                     entities = [
-                        Entity(text=entity_row[0], type=entity_row[1])
+                        Entity(
+                            text=entity_row[1],
+                            type=entity_row[2],
+                            start=-1,  # Default to -1 as these may not be stored
+                            end=-1  # Default to -1 as these may not be stored
+                        )
                         for entity_row in entities_result
                     ]
 
@@ -88,6 +93,7 @@ class DuckDBStorage:
 
                 papers.append(Paper(
                     paper_id=paper_id,
+                    pmc_id=paper_id,  # Add pmc_id for compatibility with test_batch_ingest.py
                     title=paper_row[2],
                     abstract=paper_row[3],
                     figures=figures

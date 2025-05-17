@@ -61,13 +61,22 @@ def batch(paper_ids: List[str] = typer.Argument(..., help="List of PMC IDs or PM
 
     for paper_id in paper_ids:
         logger.info(f"Processing paper ID: {paper_id}")
-        if processor.process(paper_id):
+        # Process paper and track results
+        result = processor.process(paper_id)
+        if result:
             success_count += 1
+            logger.info(f"Successfully processed paper: {paper_id}")
         else:
             failed_count += 1
+            logger.error(f"Failed to process paper: {paper_id}")
 
     logger.info(f"Batch processing complete. Success: {success_count}, Failed: {failed_count}")
 
+    # Optional: Display results for debugging
+    papers = processor.storage.get_papers()
+    logger.info(f"Found {len(papers)} papers in database")
+    for paper in papers:
+        logger.info(f"- Paper {paper.paper_id}: {len(paper.figures)} figures")
 
 @cli.command()
 def watch(

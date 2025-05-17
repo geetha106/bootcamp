@@ -1,32 +1,27 @@
-from pydantic import BaseModel
 from typing import List, Optional
+from pydantic import BaseModel
 
 
 class Entity(BaseModel):
-    """
-    Represents a named entity (e.g., gene, protein) extracted from a figure caption.
-    """
-    text: str               # the actual entity text
-    type: Optional[str]     # type/category (e.g., GENE, DISEASE)
-    start: Optional[int]    # start position in caption (optional)
-    end: Optional[int]      # end position in caption (optional)
+    """Entity model for named entities in captions"""
+    text: str
+    type: str
+    start: int = -1  # Default to -1 if position is unknown
+    end: int = -1    # Default to -1 if position is unknown
 
 
 class Figure(BaseModel):
-    """
-    Represents a single figure in the paper with caption and associated entities.
-    """
-    label: str                        # e.g., Figure 1, Fig. 2
+    """Figure model"""
+    label: str
     caption: str
-    url: Optional[str]
-    entities: List[Entity] = []      # Entities found in this caption
+    url: Optional[str] = None
+    entities: List[Entity] = []
 
 
 class Paper(BaseModel):
-    """
-    Represents the entire paper with title, abstract, and all figures.
-    """
+    """Paper model"""
     paper_id: str
     title: str
-    abstract: Optional[str]
+    abstract: str
     figures: List[Figure] = []
+    pmc_id: Optional[str] = None  # Add this for compatibility with test_batch_ingest.py

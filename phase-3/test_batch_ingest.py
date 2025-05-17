@@ -14,6 +14,66 @@ from utils.logging import get_logger
 logger = get_logger()
 
 
+def display_papers(storage):
+    """Display papers in the database"""
+    logger.info("Displaying database contents...")
+
+    try:
+        # Execute raw query to avoid model validation issues
+        papers_result = storage.conn.execute("""
+            SELECT id, paper_id, title, abstract FROM papers
+        """).fetchall()
+
+        if not papers_result:
+            logger.info("No papers found in database")
+            return
+
+        logger.info(f"Found {len(papers_result)} papers:")
+
+        for paper_row in papers_result:
+            paper_id = paper_row[1]
+            paper_title = paper_row[2]
+            paper_abstract = paper_row[3]
+
+            logger.info(f"Paper: {paper_title} (ID: {paper_id})")
+            logger.info(f"  Abstract: {paper_abstract[:100]}..." if paper_abstract else "  No abstract")
+
+            # Get figures
+            figures_result = storage.conn.execute("""
+                SELECT id, label, caption FROM figures WHERE paper_id = ?
+            """, (paper_id,)).fetchall()
+
+            logger.info(f"  Figures: {len(figures_result)}")
+
+            for fig_row in figures_result:
+                fig_id = fig_row[0]
+                fig_label = fig_row[1]
+                fig_caption = fig_row[2]
+
+                logger.info(f"    {fig_label}: {fig_caption[:50]}..." if fig_caption else "    No caption")
+
+                # Get entities
+                entities_result = storage.conn.execute("""
+                    SELECT e.name, e.type 
+                    FROM entities e
+                    JOIN figure_entities fe ON e.id = fe.entity_id
+                    WHERE fe.figure_id = ?
+                """, (fig_id,)).fetchall()
+
+                logger.info(f"    Entities: {len(entities_result)}")
+
+                for i, entity_row in enumerate(entities_result[:5]):
+                    entity_name = entity_row[0]
+                    entity_type = entity_row[1]
+                    logger.info(f"      {entity_type}: {entity_name}")
+
+                if len(entities_result) > 5:
+                    logger.info(f"      ... and {len(entities_result) - 5} more entities")
+
+    except Exception as e:
+        logger.error(f"Error displaying papers: {e}")
+
+
 def main(paper_ids: List[str] = [], reset: bool = False, display: bool = False):
     """
     Test batch ingestion of papers
@@ -31,24 +91,7 @@ def main(paper_ids: List[str] = [], reset: bool = False, display: bool = False):
         logger.info("Database reset complete")
 
     if display:
-        logger.info("Displaying database contents...")
-        papers = storage.get_papers()
-
-        if not papers:
-            logger.info("No papers found in database")
-        else:
-            logger.info(f"Found {len(papers)} papers:")
-            for paper in papers:
-                logger.info(f"Paper: {paper.title} (PMC ID: {paper.pmc_id})")
-                logger.info(f"  Abstract: {paper.abstract[:100]}...")
-                logger.info(f"  Figures: {len(paper.figures)}")
-                for fig in paper.figures:
-                    logger.info(f"    {fig.label}: {fig.caption[:50]}...")
-                    logger.info(f"    Entities: {len(fig.entities)}")
-                    for entity in fig.entities[:5]:  # Show only first 5 entities
-                        logger.info(f"      {entity.type}: {entity.text}")
-                    if len(fig.entities) > 5:
-                        logger.info(f"      ... and {len(fig.entities) - 5} more entities")
+        display_papers(storage)
 
     if paper_ids:
         logger.info(f"Processing {len(paper_ids)} paper(s)...")
@@ -66,9 +109,7 @@ def main(paper_ids: List[str] = [], reset: bool = False, display: bool = False):
 
         if display:
             logger.info("Displaying updated database contents...")
-            papers = storage.get_papers()
-            logger.info(f"Found {len(papers)} papers after processing")
-
+            display_papers(storage)
 
 if __name__ == "__main__":
     # Parse arguments using argparse to maintain compatibility
