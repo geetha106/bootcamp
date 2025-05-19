@@ -1,0 +1,407 @@
+{
+  "results": [
+    {
+      "paper_id": "PMC7696669",
+      "source": "PMC",
+      "status": "success",
+      "title": "N-Nitrosodimethylamine Contamination in the Metformin Finished Products",
+      "abstract": "A GC\u00e2\u0080\u0093MS/MS method with EI ionization was developed and validated to detect and quantify N-nitrosodimethylamine (NDMA) and seven other nitrosamines in 105 samples of metformin tablets from 13 different manufactures. Good linearity for each compound was demonstrated over the calibration range of 0.5\u00e2\u0080\u00939.5 ng/mL. The assay for all substances was accurate and precise. NDMA was not detected in the acquired active pharmaceutical ingredient (API); however, NDMA was detected in 64 (85.3%) and 22 (91.7%) of the finished product and prolonged finished product samples, respectively. European Medicines Agency recommends the maximum allowed limit of 0.032 ppm in the metformin products. Hence, 28 finished products and 7 pronged dosage products were found to exceed the acceptable limit of daily intake of NDMA contamination. The implications of our findings for the testing of pharmaceutical products are discussed.",
+      "figures": [
+        {
+          "figure_id": "Figure 1",
+          "caption": "The chromatograms of (1) the N-nitrosamines (NAs) standards (1.0 ng/mL); (2) the NAs standards (5.0 ng/mL); (3) the sample solution; (4) the blank solution.",
+          "figure_url": null,
+          "entities": [
+            {
+              "entity": "nitrosamines",
+              "type": "Chemical"
+            },
+            {
+              "entity": "N-Nitrosodimethylamine",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Metformin",
+              "type": "Chemical"
+            },
+            {
+              "entity": "NDMA",
+              "type": "Chemical"
+            },
+            {
+              "entity": "active pharmaceutical ingredient",
+              "type": "Chemical"
+            },
+            {
+              "entity": "API",
+              "type": "Chemical"
+            }
+          ]
+        },
+        {
+          "figure_id": "Figure 2",
+          "caption": "(a) NDMA recovery in the spiked samples estimated in each analysis of the metformin products. (b) Internal standard (IS \u00e2\u0080\u0093 d6-NDMA) recovery as a percentage of the mean peak area in the standard solutions. (c) Slope of the calibration curves of NDMA calculated in each analysis. Green lines represent \u00c2\u00b1 2 \u00c3\u0097 SD, red lines represent \u00c2\u00b13 \u00c3\u0097 SD.",
+          "figure_url": null,
+          "entities": [
+            {
+              "entity": "nitrosamines",
+              "type": "Chemical"
+            },
+            {
+              "entity": "N-Nitrosodimethylamine",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Metformin",
+              "type": "Chemical"
+            },
+            {
+              "entity": "NDMA",
+              "type": "Chemical"
+            },
+            {
+              "entity": "active pharmaceutical ingredient",
+              "type": "Chemical"
+            },
+            {
+              "entity": "API",
+              "type": "Chemical"
+            }
+          ]
+        },
+        {
+          "figure_id": "Figure 3",
+          "caption": "The results of the assay of NDMA concentration in all tested metformin products. Blue bars represent finished products, and the green bars corresponds to the prolonged finished products. The red dotted line represents the suggested maximum allowed concentration of 0.032 ppm. The blue dotted line represents the LOQ of the method that corresponds to 0.016 ppm.",
+          "figure_url": null,
+          "entities": [
+            {
+              "entity": "nitrosamines",
+              "type": "Chemical"
+            },
+            {
+              "entity": "N-Nitrosodimethylamine",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Metformin",
+              "type": "Chemical"
+            },
+            {
+              "entity": "NDMA",
+              "type": "Chemical"
+            },
+            {
+              "entity": "active pharmaceutical ingredient",
+              "type": "Chemical"
+            },
+            {
+              "entity": "API",
+              "type": "Chemical"
+            }
+          ]
+        },
+        {
+          "figure_id": "Figure 4",
+          "caption": "NDMA peak before and after treatment with a short period of high temperature (100 \u00c2\u00b0C). The black line (\u00e2\u0080\u0093) corresponds to tablets extracted with CH2Cl2 (control), (pink line) tablets heated for 30 s; (blue line) tables heated for 2 min.",
+          "figure_url": null,
+          "entities": [
+            {
+              "entity": "nitrosamines",
+              "type": "Chemical"
+            },
+            {
+              "entity": "N-Nitrosodimethylamine",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Metformin",
+              "type": "Chemical"
+            },
+            {
+              "entity": "NDMA",
+              "type": "Chemical"
+            },
+            {
+              "entity": "active pharmaceutical ingredient",
+              "type": "Chemical"
+            },
+            {
+              "entity": "API",
+              "type": "Chemical"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "paper_id": "PMC6142073",
+      "source": "PMC",
+      "status": "success",
+      "title": "Fraction From Lycium barbarum Polysaccharides Reduces Immunotoxicity and Enhances Antitumor Activity of Doxorubicin in Mice",
+      "abstract": "The aim of the present study was to investigate whether fraction from Lycium barbarum polysaccharide (LBP) could reduce immunotoxicity and enhance antitumor activity of doxorubicin (Dox) in mice. A water-soluble LBP fraction, designated LBP3, was isolated from edible Chinese herbal Lycium barbarum and used in this study. To investigate the effect of LBP3 on Dox-induced immunotoxicity, tumor-free mice were used and treated with either normal saline, Dox, or Dox plus LBP3. To investigate the effect of LBP3 on antitumor activity of Dox, H22 tumor-bearing mice were used and treated with either normal saline, Dox, LBP3, or Dox plus LBP3. The results showed that LBP3 did not protect against the body weight loss caused by Dox, but it promoted the recovery of body weight starting at day 5 after Dox treatment in tumor-free mice. LBP3 also improved peripheral blood lymphocyte counts, promoted cell cycle recovery in bone marrow cells, and restored the cytotoxicity of natural killer cells. Furthermore, in H22 tumor-bearing mice, LBP3 enhanced antitumor activity of Dox and improved peripheral blood lymphocyte counts and the cytotoxicity of splenocytes. In brief, our results demonstrated that LBP3 could reduce the immunotoxicity and enhance antitumor activity of Dox.",
+      "figures": [
+        {
+          "figure_id": "Figure 1",
+          "caption": "LBP3 restored body weight in Dox-treated tumor-free mice. Data were shown as the mean \u00c2\u00b1 SEM (n = 6). ##P <.01 versus control group. *P <.05 and **P <.01 versus Dox group.",
+          "figure_url": null,
+          "entities": [
+            {
+              "entity": "Dox",
+              "type": "Chemical"
+            },
+            {
+              "entity": "tumor",
+              "type": "Disease"
+            },
+            {
+              "entity": "Mice",
+              "type": "Species"
+            },
+            {
+              "entity": "Lycium barbarum",
+              "type": "Species"
+            },
+            {
+              "entity": "Polysaccharides",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Doxorubicin",
+              "type": "Chemical"
+            },
+            {
+              "entity": "water",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Chinese herbal",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Immunotoxicity",
+              "type": "Disease"
+            },
+            {
+              "entity": "weight loss",
+              "type": "Disease"
+            },
+            {
+              "entity": "H22",
+              "type": "CellLine"
+            }
+          ]
+        },
+        {
+          "figure_id": "Figure 2",
+          "caption": "LBP3 promoted cell cycle recovery of BMC in Dox-treated tumor-free mice. The cell cycle was assayed by flow cytometry and analyzed with ModFit software. Data were shown as the mean \u00c2\u00b1 SEM (n = 6).",
+          "figure_url": null,
+          "entities": [
+            {
+              "entity": "Dox",
+              "type": "Chemical"
+            },
+            {
+              "entity": "tumor",
+              "type": "Disease"
+            },
+            {
+              "entity": "Mice",
+              "type": "Species"
+            },
+            {
+              "entity": "Lycium barbarum",
+              "type": "Species"
+            },
+            {
+              "entity": "Polysaccharides",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Doxorubicin",
+              "type": "Chemical"
+            },
+            {
+              "entity": "water",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Chinese herbal",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Immunotoxicity",
+              "type": "Disease"
+            },
+            {
+              "entity": "weight loss",
+              "type": "Disease"
+            },
+            {
+              "entity": "H22",
+              "type": "CellLine"
+            }
+          ]
+        },
+        {
+          "figure_id": "Figure 3",
+          "caption": "LBP3 restored the cytotoxicity of NK cells in Dox-treated tumor-free mice. H22 cells as target cells were labeled with CFSE before incubation with splenocytes. The effector cells (splenocytes) and target cells (H22 cells) were incubated for 24 hours at ratios of 50:1. After staining of PI, flow cytometry was performed to calculate the percentage of PI+ H22 cells. Data were shown as the mean \u00c2\u00b1 SEM (n = 6). *P <.05 versus control group. #P <.05 versus Dox group.",
+          "figure_url": null,
+          "entities": [
+            {
+              "entity": "Dox",
+              "type": "Chemical"
+            },
+            {
+              "entity": "tumor",
+              "type": "Disease"
+            },
+            {
+              "entity": "Mice",
+              "type": "Species"
+            },
+            {
+              "entity": "Lycium barbarum",
+              "type": "Species"
+            },
+            {
+              "entity": "Polysaccharides",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Doxorubicin",
+              "type": "Chemical"
+            },
+            {
+              "entity": "water",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Chinese herbal",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Immunotoxicity",
+              "type": "Disease"
+            },
+            {
+              "entity": "weight loss",
+              "type": "Disease"
+            },
+            {
+              "entity": "H22",
+              "type": "CellLine"
+            }
+          ]
+        },
+        {
+          "figure_id": "Figure 4",
+          "caption": "LBP3 enhanced the antitumor activity of Dox in H22 tumor-bearing mice. H22 tumor-bearing mice were used in this study. Once mice were killed by cervical dislocation at the end of the treatment period, the tumor was immediately dissected and weighed. Data were shown as the mean \u00c2\u00b1 SEM (n = 7, n = 5 in model group). **P <.01 and ***P <.001 versus model group. ##P <.01 and ###P <.001 versus Dox group.",
+          "figure_url": null,
+          "entities": [
+            {
+              "entity": "Dox",
+              "type": "Chemical"
+            },
+            {
+              "entity": "tumor",
+              "type": "Disease"
+            },
+            {
+              "entity": "Mice",
+              "type": "Species"
+            },
+            {
+              "entity": "Lycium barbarum",
+              "type": "Species"
+            },
+            {
+              "entity": "Polysaccharides",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Doxorubicin",
+              "type": "Chemical"
+            },
+            {
+              "entity": "water",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Chinese herbal",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Immunotoxicity",
+              "type": "Disease"
+            },
+            {
+              "entity": "weight loss",
+              "type": "Disease"
+            },
+            {
+              "entity": "H22",
+              "type": "CellLine"
+            }
+          ]
+        },
+        {
+          "figure_id": "Figure 5",
+          "caption": "LBP3 restored the cytotoxicity of splenocytes in Dox-treated H22 tumor-bearing mice. The splenocytes and H22 cells were incubated for 24 hours at ratios of 50:1. After being stained with PI, flow cytometry was performed to calculate the percentage of PI+ H22 cells. Data were shown as the means \u00c2\u00b1 SEM (n = 7, n = 5 in model group). *P <.05 and **P <.01 versus model group. #P <.05 and ##P <.01 versus Dox group.",
+          "figure_url": null,
+          "entities": [
+            {
+              "entity": "Dox",
+              "type": "Chemical"
+            },
+            {
+              "entity": "tumor",
+              "type": "Disease"
+            },
+            {
+              "entity": "Mice",
+              "type": "Species"
+            },
+            {
+              "entity": "Lycium barbarum",
+              "type": "Species"
+            },
+            {
+              "entity": "Polysaccharides",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Doxorubicin",
+              "type": "Chemical"
+            },
+            {
+              "entity": "water",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Chinese herbal",
+              "type": "Chemical"
+            },
+            {
+              "entity": "Immunotoxicity",
+              "type": "Disease"
+            },
+            {
+              "entity": "weight loss",
+              "type": "Disease"
+            },
+            {
+              "entity": "H22",
+              "type": "CellLine"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_requested": 2,
+    "successful": 2,
+    "failed": 0,
+    "processing_time": 1.69
+  }
+}

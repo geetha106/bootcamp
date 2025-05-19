@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "figurex"
+version = "1.0.0"
+description = "Extract figure captions and metadata from scientific papers"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "FigureX Team"}
+]
+dependencies = [
+    "typer>=0.6.1",
+    "rich>=12.0.0",
+    "pydantic>=1.9.0",
+    "duckdb>=0.7.0",
+    "requests>=2.27.1",
+    "spacy>=3.5.0",
+    "pyyaml",
+    "beautifulsoup4",
+    "fastapi>=0.95.0",
+    "uvicorn>=0.21.0",
+    "python-multipart",
+    "jinja2>=3.1.2",
+    "aiofiles"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/figurex/figurex"
+"Bug Tracker" = "https://github.com/figurex/figurex/issues"
+
+[tool.setuptools]
+packages = ["api", "cli", "config", "ingestion", "models", "processing", "storage", "utils"]
+
+[tool.black]
+line-length = 100
+target-version = ["py38", "py39", "py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true

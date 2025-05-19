@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FigureX Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            background-color: #343a40;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card {
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .upload-area {
+            border: 2px dashed #adb5bd;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            background-color: #f8f9fa;
+            transition: all 0.3s;
+        }
+        .upload-area:hover {
+            border-color: #0d6efd;
+            background-color: #f1f3f5;
+        }
+        .paper-card {
+            cursor: pointer;
+        }
+        .figure-card {
+            margin-bottom: 15px;
+        }
+        .entity-badge {
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        #loading {
+            display: none; /* Initially hidden */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        .api-key-status {
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div id="loading">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-microscope me-2"></i>
+                FigureX Dashboard
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" id="uploadTab">Upload</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="papersTab">Papers</a>
+                    </li>
+                    <!-- API Key button removed -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <!-- Upload Section -->
+        <div id="uploadSection">
+            <div class="row">
+                <div class="col-md-8 mx-auto">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Upload Paper IDs</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Upload a file containing paper IDs (PMC IDs or PMIDs) or enter them manually.</p>
+                            
+                            <!-- File Upload -->
+                            <div class="mb-4">
+                                <h6>Option 1: Upload a file</h6>
+                                <div class="upload-area" id="dropArea">
+                                    <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-primary"></i>
+                                    <p>Drag and drop a file here or click to browse</p>
+                                    <p class="text-muted small">Supported formats: .txt, .csv</p>
+                                    <input type="file" id="fileInput" class="d-none" accept=".txt,.csv">
+                                </div>
+                            </div>
+                            
+                            <!-- Manual Input -->
+                            <div class="mb-4">
+                                <h6>Option 2: Enter IDs manually</h6>
+                                <div class="form-group">
+                                    <textarea class="form-control" id="manualIds" rows="5" placeholder="Enter one ID per line (e.g., PMC1790863, 35871145)"></textarea>
+                                </div>
+                            </div>
+                            
+                            <!-- Submit Button -->
+                            <button class="btn btn-primary w-100" id="processButton">
+                                <i class="fas fa-cogs me-2"></i>Process Paper IDs
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Results Card (initially hidden) -->
+                    <div class="card mt-4" id="resultsCard" style="display: none;">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">Processing Results</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-3">
+                                <div>
+                                    <span class="badge bg-success me-2" id="successCount">0 Successful</span>
+                                    <span class="badge bg-danger" id="failedCount">0 Failed</span>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-info me-2" id="viewMetadataButton">
+                                        <i class="fas fa-eye me-1"></i>View Metadata
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary" id="exportButton">
+                                        <i class="fas fa-download me-1"></i>Export Results
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="resultsList"></div>
+                            
+                            <!-- Metadata Display (initially hidden) -->
+                            <div id="metadataDisplay" class="mt-4" style="display: none;">
+                                <h6 class="border-bottom pb-2">Extracted Metadata</h6>
+                                <div class="mb-3">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline-secondary active" id="jsonFormatBtn">JSON</button>
+                                        <button type="button" class="btn btn-outline-secondary" id="csvFormatBtn">CSV</button>
+                                    </div>
+                                </div>
+                                <div id="metadataContent" class="border rounded p-3 bg-light">
+                                    <pre class="mb-0" style="max-height: 400px; overflow: auto;"></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Papers Section (initially hidden) -->
+        <div id="papersSection" style="display: none;">
+            <div class="row">
+                <div class="col-md-4">
+                    <!-- Papers List -->
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Papers</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush" id="papersList">
+                                <!-- Papers will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <!-- Paper Details -->
+                    <div class="card" id="paperDetails" style="display: none;">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0" id="paperTitle">Paper Title</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted" id="paperId">Paper ID</h6>
+                            <p class="card-text" id="paperAbstract">Abstract will appear here.</p>
+                            
+                            <h5 class="mt-4">Figures</h5>
+                            <div id="figuresList">
+                                <!-- Figures will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center py-3 mt-5">
+        <div class="container">
+            <p class="mb-0">FigureX Dashboard &copy; 2023</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const uploadTab = document.getElementById('uploadTab');
+            const papersTab = document.getElementById('papersTab');
+            const uploadSection = document.getElementById('uploadSection');
+            const papersSection = document.getElementById('papersSection');
+            const dropArea = document.getElementById('dropArea');
+            const fileInput = document.getElementById('fileInput');
+            const manualIds = document.getElementById('manualIds');
+            const processButton = document.getElementById('processButton');
+            const resultsCard = document.getElementById('resultsCard');
+            const successCount = document.getElementById('successCount');
+            const failedCount = document.getElementById('failedCount');
+            const resultsList = document.getElementById('resultsList');
+            const papersList = document.getElementById('papersList');
+            const paperDetails = document.getElementById('paperDetails');
+            const paperTitle = document.getElementById('paperTitle');
+            const paperId = document.getElementById('paperId');
+            const paperAbstract = document.getElementById('paperAbstract');
+            const figuresList = document.getElementById('figuresList');
+            const exportButton = document.getElementById('exportButton');
+            const viewMetadataButton = document.getElementById('viewMetadataButton');
+            const metadataDisplay = document.getElementById('metadataDisplay');
+            const metadataContent = document.getElementById('metadataContent').querySelector('pre');
+            const jsonFormatBtn = document.getElementById('jsonFormatBtn');
+            const csvFormatBtn = document.getElementById('csvFormatBtn');
+            const loading = document.getElementById('loading');
+            
+            // API Key handling
+            let apiKey = '';
+            let apiKeyForSession = false;
+            
+            // API Key button removed
+            
+            // Check if API key is needed
+            function checkApiKey() {
+                return fetch('/api/health')
+                    .then(response => {
+                        if (response.status === 401) {
+                            // API key is required
+                            promptForApiKey();
+                            return false;
+                        }
+                        return true;
+                    })
+                    .catch(error => {
+                        console.error('Error checking API key:', error);
+                        return false;
+                    });
+            }
+            
+            // Prompt for API key
+            function promptForApiKey() {
+                const key = prompt('Please enter your API key:');
+                if (key) {
+                    apiKey = key;
+                    apiKeyForSession = true;
+                    return true;
+                }
+                return false;
+            }
+            
+            // Add API key to fetch options
+            function addApiKey(options = {}) {
+                if (!options.headers) {
+                    options.headers = {};
+                }
+                
+                if (apiKey) {
+                    options.headers['X-API-Key'] = apiKey;
+                }
+                
+                return options;
+            }
+            
+            // Handle unauthorized responses
+            function handleUnauthorized(response) {
+                if (response.status === 401) {
+                    if (promptForApiKey()) {
+                        // Retry the request with the new API key
+                        const newOptions = addApiKey(response.options || {});
+                        return fetch(response.url, newOptions);
+                    } else {
+                        throw new Error('API key required');
+                    }
+                }
+                return response;
+            }
+            
+            // Enhanced fetch with API key handling
+            function fetchWithAuth(url, options = {}) {
+                const authOptions = addApiKey(options);
+                
+                return fetch(url, authOptions)
+                    .then(response => {
+                        if (response.status === 401) {
+                            response.url = url;
+                            response.options = options;
+                            return handleUnauthorized(response);
+                        }
+                        return response;
+                    });
+            }
+            
+            // Hide loading spinner initially
+            hideLoading();
+            
+            // Check API key on load
+            checkApiKey();
+            
+            // Tab navigation
+            uploadTab.addEventListener('click', function(e) {
+                e.preventDefault();
+                uploadTab.classList.add('active');
+                papersTab.classList.remove('active');
+                uploadSection.style.display = 'block';
+                papersSection.style.display = 'none';
+            });
+            
+            papersTab.addEventListener('click', function(e) {
+                e.preventDefault();
+                papersTab.classList.add('active');
+                uploadTab.classList.remove('active');
+                papersSection.style.display = 'block';
+                uploadSection.style.display = 'none';
+                
+                // API key will be requested automatically if needed during fetch
+                
+                loadPapers();
+            });
+            
+            // File upload handling
+            dropArea.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            dropArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                dropArea.classList.add('border-primary');
+            });
+            
+            dropArea.addEventListener('dragleave', function() {
+                dropArea.classList.remove('border-primary');
+            });
+            
+            dropArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                dropArea.classList.remove('border-primary');
+                
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    const fileName = e.dataTransfer.files[0].name;
+                    dropArea.innerHTML = `<i class="fas fa-file-alt fa-3x mb-3 text-primary"></i><p>${fileName}</p>`;
+                }
+            });
+            
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length) {
+                    const fileName = fileInput.files[0].name;
+                    dropArea.innerHTML = `<i class="fas fa-file-alt fa-3x mb-3 text-primary"></i><p>${fileName}</p>`;
+                }
+            });
+            
+            // Process button click
+            processButton.addEventListener('click', function() {
+                // Check if we have file or manual input
+                if (fileInput.files.length === 0 && !manualIds.value.trim()) {
+                    alert('Please upload a file or enter IDs manually');
+                    return;
+                }
+                
+                // API key will be requested automatically if needed
+                
+                showLoading();
+                
+                if (fileInput.files.length > 0) {
+                    // Process file upload
+                    const file = fileInput.files[0];
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    fetchWithAuth('/api/upload', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        displayResults(data);
+                        hideLoading();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while processing the file');
+                        hideLoading();
+                    });
+                } else {
+                    // Process manual input
+                    const ids = manualIds.value.trim().split(/[\n,]+/).map(id => id.trim()).filter(id => id);
+                    
+                    fetchWithAuth('/api/process', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ ids: ids })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        displayResults(data);
+                        hideLoading();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while processing the IDs');
+                        hideLoading();
+                    });
+                }
+            });
+            
+            // Export button click
+            exportButton.addEventListener('click', function() {
+                const format = confirm('Click OK to export as JSON, Cancel for CSV') ? 'json' : 'csv';
+                const url = `/api/export?format=${format}&use_recent=true`;
+                
+                // Create a hidden form to submit with API key
+                const form = document.createElement('form');
+                form.method = 'GET';
+                form.action = url;
+                
+                // Add API key as hidden input
+                if (apiKey) {
+                    const apiKeyInput = document.createElement('input');
+                    apiKeyInput.type = 'hidden';
+                    apiKeyInput.name = 'api_key';
+                    apiKeyInput.value = apiKey;
+                    form.appendChild(apiKeyInput);
+                }
+                
+                // Submit the form
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+            });
+            
+            // View metadata button click
+            viewMetadataButton.addEventListener('click', function() {
+                showLoading();
+                
+                // Get the currently selected format
+                const format = jsonFormatBtn.classList.contains('active') ? 'json' : 'csv';
+                
+                // Fetch metadata
+                fetchWithAuth(`/api/metadata?format=${format}&use_recent=true`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (format === 'json') {
+                            // For JSON, pretty-print the data
+                            metadataContent.textContent = JSON.stringify(data.data, null, 2);
+                        } else {
+                            // For CSV, just display the CSV text
+                            metadataContent.textContent = data.data;
+                        }
+                        
+                        // Show the metadata display
+                        metadataDisplay.style.display = 'block';
+                        hideLoading();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while fetching metadata');
+                        hideLoading();
+                    });
+            });
+            
+            // Format toggle buttons
+            jsonFormatBtn.addEventListener('click', function() {
+                if (!this.classList.contains('active')) {
+                    this.classList.add('active');
+                    csvFormatBtn.classList.remove('active');
+                    
+                    // If metadata is already displayed, refresh it with the new format
+                    if (metadataDisplay.style.display !== 'none') {
+                        viewMetadataButton.click();
+                    }
+                }
+            });
+            
+            csvFormatBtn.addEventListener('click', function() {
+                if (!this.classList.contains('active')) {
+                    this.classList.add('active');
+                    jsonFormatBtn.classList.remove('active');
+                    
+                    // If metadata is already displayed, refresh it with the new format
+                    if (metadataDisplay.style.display !== 'none') {
+                        viewMetadataButton.click();
+                    }
+                }
+            });
+            
+            // Display processing results
+            function displayResults(data) {
+                successCount.textContent = `${data.success_count} Successful`;
+                failedCount.textContent = `${data.failed_count} Failed`;
+                
+                resultsList.innerHTML = '';
+                
+                data.processed_ids.forEach(item => {
+                    const statusClass = item.status === 'success' ? 'success' : 'danger';
+                    const statusIcon = item.status === 'success' ? 'check-circle' : 'times-circle';
+                    
+                    const resultItem = document.createElement('div');
+                    resultItem.className = `alert alert-${statusClass} mb-2`;
+                    resultItem.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-${statusIcon} me-2"></i>
+                            <strong>${item.paper_id}</strong>
+                            ${item.status === 'success' ? 
+                                `<span class="ms-auto badge bg-info">${item.figures ? item.figures.length : 0} figures</span>` : 
+                                `<span class="ms-auto text-danger">${item.message || 'Failed'}</span>`
+                            }
+                        </div>
+                    `;
+                    
+                    resultsList.appendChild(resultItem);
+                });
+                
+                resultsCard.style.display = 'block';
+            }
+            
+            // Load papers list
+            function loadPapers() {
+                showLoading();
+                
+                fetchWithAuth('/api/papers')
+                    .then(response => response.json())
+                    .then(data => {
+                        papersList.innerHTML = '';
+                        
+                        if (data.length === 0) {
+                            papersList.innerHTML = '<div class="list-group-item">No papers found</div>';
+                        } else {
+                            data.forEach(paper => {
+                                const paperItem = document.createElement('a');
+                                paperItem.href = '#';
+                                paperItem.className = 'list-group-item list-group-item-action paper-item';
+                                paperItem.dataset.id = paper.paper_id;
+                                paperItem.innerHTML = `
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">${truncateText(paper.title, 40)}</h6>
+                                    </div>
+                                    <small class="text-muted">${paper.paper_id}</small>
+                                    <span class="badge bg-info float-end">${paper.figure_count} figures</span>
+                                `;
+                                
+                                paperItem.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    loadPaperDetails(paper.paper_id);
+                                    
+                                    // Highlight selected paper
+                                    document.querySelectorAll('.paper-item').forEach(item => {
+                                        item.classList.remove('active');
+                                    });
+                                    this.classList.add('active');
+                                });
+                                
+                                papersList.appendChild(paperItem);
+                            });
+                            
+                            // Load the first paper by default
+                            if (data.length > 0) {
+                                loadPaperDetails(data[0].paper_id);
+                                papersList.querySelector('.paper-item').classList.add('active');
+                            }
+                        }
+                        
+                        hideLoading();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        papersList.innerHTML = '<div class="list-group-item text-danger">Error loading papers</div>';
+                        hideLoading();
+                    });
+            }
+            
+            // Load paper details
+            function loadPaperDetails(paperId) {
+                showLoading();
+                
+                fetchWithAuth(`/api/papers/${paperId}`)
+                    .then(response => response.json())
+                    .then(paper => {
+                        paperTitle.textContent = paper.title;
+                        document.getElementById('paperId').textContent = paper.paper_id;
+                        paperAbstract.textContent = paper.abstract;
+                        
+                        figuresList.innerHTML = '';
+                        
+                        if (paper.figures.length === 0) {
+                            figuresList.innerHTML = '<div class="alert alert-info">No figures found for this paper</div>';
+                        } else {
+                            paper.figures.forEach(figure => {
+                                const figureCard = document.createElement('div');
+                                figureCard.className = 'card figure-card';
+                                
+                                let figureContent = `
+                                    <div class="card-header">
+                                        <h6 class="mb-0">${figure.label}</h6>
+                                    </div>
+                                    <div class="card-body">
+                                `;
+                                
+                                // Add figure image if URL is available
+                                if (figure.url) {
+                                    figureContent += `
+                                        <div class="text-center mb-3">
+                                            <img src="${figure.url}" alt="${figure.label}" class="img-fluid" style="max-height: 300px;">
+                                        </div>
+                                    `;
+                                }
+                                
+                                figureContent += `
+                                        <p class="card-text">${figure.caption}</p>
+                                `;
+                                
+                                // Add entities if available
+                                if (figure.entities && figure.entities.length > 0) {
+                                    figureContent += '<div class="mt-3"><h6>Entities:</h6><div>';
+                                    
+                                    figure.entities.forEach(entity => {
+                                        const entityTypeClass = getEntityTypeClass(entity.type);
+                                        figureContent += `
+                                            <span class="badge ${entityTypeClass} entity-badge">${entity.text} (${entity.type})</span>
+                                        `;
+                                    });
+                                    
+                                    figureContent += '</div></div>';
+                                }
+                                
+                                figureContent += '</div>'; // Close card-body
+                                figureCard.innerHTML = figureContent;
+                                figuresList.appendChild(figureCard);
+                            });
+                        }
+                        
+                        paperDetails.style.display = 'block';
+                        hideLoading();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        figuresList.innerHTML = '<div class="alert alert-danger">Error loading paper details</div>';
+                        hideLoading();
+                    });
+            }
+            
+            // Helper functions
+            function truncateText(text, maxLength) {
+                return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+            }
+            
+            function getEntityTypeClass(type) {
+                const typeMap = {
+                    'DISEASE': 'bg-danger',
+                    'GENE': 'bg-success',
+                    'CHEMICAL': 'bg-warning',
+                    'SPECIES': 'bg-info',
+                    'MUTATION': 'bg-primary'
+                };
+                
+                return typeMap[type] || 'bg-secondary';
+            }
+            
+            function showLoading() {
+                loading.style.display = 'flex';
+            }
+            
+            function hideLoading() {
+                loading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html> 

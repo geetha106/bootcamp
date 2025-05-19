@@ -1,0 +1,51 @@
+api:
+  api_key: figurex2023
+  url: http://0.0.0.0:8000/api
+general:
+  data_source: PMC
+  log_level: INFO
+  output_dir: data/output
+ingestion:
+  batch_size: 10
+  watch_folder: data/watch
+logging:
+  backup_count: 5
+  file_path: logs/figurex.log
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  level: INFO
+  max_log_size: 10485760
+  rotate_logs: true
+ncbi:
+  api_key: your_ncbi_api_key_here
+  pmc_base_url: https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi
+  pubtator_base_url: https://www.ncbi.nlm.nih.gov/research/pubtator3-api/publications/export/pubtator
+  request_timeout: 30
+  retry_attempts: 3
+  retry_delay: 1
+output:
+  csv_delimiter: ','
+  formats:
+  - json
+  - csv
+  include_summary: true
+  max_entities_in_csv: 5
+  output_dir: data/output
+  pretty_print_json: true
+processing:
+  batch_size: 10
+  caption_cleanup_enabled: true
+  entity_types:
+  - Gene
+  - Disease
+  - Chemical
+  - Species
+  - Mutation
+  max_entities_per_figure: 50
+  min_entity_confidence: 0.5
+  parallel_processing: false
+storage:
+  auto_update_schema: true
+  backend: duckdb
+  cache_enabled: true
+  cache_ttl: 86400
+  db_path: data/figurex.db
