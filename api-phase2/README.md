@@ -1,105 +1,60 @@
-# FigureX: Scientific Paper Figure Extraction API
+# Figure captions extraction
 
-FigureX is a tool for extracting figure captions, entities, titles, abstracts, and figure URLs from scientific papers using PMC IDs or PMIDs.
+**FigureX** is a modular system for extracting figure captions, entities, titles, abstracts, and figure URLs from scientific publications using PMC IDs or PMIDs.
+
+---
 
 ## Features
 
-- Extract figure captions and metadata from scientific papers
-- Identify entities (genes, diseases, chemicals, etc.) in figure captions
-- Search papers based on various criteria (titles, captions, entities)
-- Export results in JSON or CSV format
-- API key authentication for secure access
-- Docker deployment support
-- Watched directory for automatic processing of paper ID files
+* Extracts figure captions and metadata from scientific papers
+* Identifies biological entities (e.g., genes, diseases, chemicals) in captions
+* Supports search by titles, captions, and extracted entities
+* Outputs results in JSON or CSV
+* API key authentication for secure access
+* Docker deployment ready
+* Supports watched directory for automatic ID processing
+
+---
 
 ## Setup
 
 1. Clone the repository
-2. Install dependencies: `make install`
+   ```bash
+   git clone https://github.com/geetharuttala/bootcamp.git
+   cd bootcamp/figure-captions-extraction
+   ```
+2. Install dependencies:
+
+   ```bash
+   make install
+   ```
 3. Configure settings in `settings.yaml`
-4. Run the API server: `make api-run`
+4. Run the API server:
 
-## Watched Directory Feature
+   ```bash
+   make api-run
+   ```
 
-FigureX includes a watched directory system that automatically processes files containing paper IDs:
+---
 
-1. Place `.txt` files with paper IDs (one per line) in the `watched_dir/unprocessed` folder
-2. Files are automatically moved to `watched_dir/underprocess` during processing
-3. After processing, files are moved to `watched_dir/processed`
-4. Run the watched directory processor: `make run` (uses watcher.py)
+## CLI Usage
 
-The directory structure:
-```
-watched_dir/
-├── unprocessed/    # Place new files here
-├── underprocess/   # Files currently being processed
-└── processed/      # Completed files
-```
-
-## API Authentication
-
-The API uses API key authentication. The default API key is configured in `settings.yaml`:
-
-```yaml
-api:
-  api_key: figurex2023
-  url: http://localhost:8000/api
-```
-
-You can modify this key by editing the `settings.yaml` file directly.
-
-### Authentication Method
-
-You can use a query parameter:
-
-```
-curl "http://0.0.0.0:8000/api/entity-types?api_key=figurex2023"
-```
-
-The UI dashboard will prompt for the API key when needed.
-
-## Using the Makefile
-
-The project includes a Makefile with commands for common operations:
+FigureX provides a set of CLI commands using `Typer`:
 
 ```bash
-# Install dependencies
-make install
-
-# Run the watched directory processor
-make run
-
-# Run the API server
-make api-run
-
-# Run tests
-make test
-
-# Build Docker image
-make docker-build
-
-# Run Docker container
-make docker-run
-```
-
-## CLI Commands
-
-The system provides CLI commands for various operations:
-
-```bash
-# Ingest papers from a file
+# Ingest paper IDs from a file
 python -m cli.cli ingest test.txt
 
-# Batch process multiple IDs
+# Batch ingestion of specific IDs
 python -m cli.cli batch PMC7696669 29355051
 
-# Output in CSV format
+# Output results in CSV format
 python -m cli.cli batch PMC7696669 29355051 --format csv
 
-# Output in JSON format
+# Output results in JSON format
 python -m cli.cli batch PMC7696669 17299597 --format json
 
-# Save output to a file
+# Save results to a file
 python -m cli.cli batch PMC7696669 29355051 --output results.json
 python -m cli.cli batch PMC7696669 29355051 --output results.csv
 
@@ -110,223 +65,306 @@ python -m cli.cli reset
 python -m cli.cli reset --force
 ```
 
-## API Endpoints
+---
 
-### Health Check
+## API Usage
+
+### Authentication
+
+All endpoints (except health check) require API key authentication.
+Default key: `figurex2023` (defined in `settings.yaml`).
+
+**Via query parameter:**
+
+```
+curl "http://0.0.0.0:8000/api/entity-types?api_key=figurex2023"
+```
+
+### API Endpoints
+
+#### 1. Health Check
 
 ```
 GET /api/health
 ```
 
-Check if the API is running. This endpoint doesn't require authentication.
+Check if the API server is running.
 
-**Example:**
-```
+Example:
+
+```bash
 curl http://0.0.0.0:8000/api/health
 ```
 
-### Process Paper IDs
+---
+
+#### 2. Process Paper IDs
 
 ```
 POST /api/process
 ```
 
-Process a list of paper IDs (PMC IDs or PMIDs).
+Process a list of PMC/PMID paper IDs.
 
-**Request Body:**
-```json
-{
-  "ids": ["PMC1234567", "12345678"]
-}
-```
+You can upload a list of PMC/PMIDs via the UI dashboard at http://0.0.0.0:8000/
 
-**Example:**
-```bash
-curl -X POST "http://0.0.0.0:8000/api/process" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: figurex2023" \
-  -d '{"ids": ["PMC1790863", "29355051"]}'
-```
+---
 
-### Upload Paper IDs
+#### 3. Upload Paper IDs (from file)
 
 ```
 POST /api/upload
 ```
 
-Upload a file containing paper IDs (one per line) and process them.
+Upload and process a `.txt` file containing paper IDs (one per line).
 
-**Example:**
-```bash
-curl -X POST "http://0.0.0.0:8000/api/upload" \
-  -H "X-API-Key: figurex2023" \
-  -F "file=@test.txt"
-```
+You can upload a .txt file via the UI dashboard at http://0.0.0.0:8000/ and see the results.
 
-### Get All Papers
+---
+
+#### 4. Get All Papers
 
 ```
 GET /api/papers
 ```
 
-Get all papers from the database.
+Example:
 
-**Example:**
-```
+```bash
 curl "http://0.0.0.0:8000/api/papers?api_key=figurex2023"
 ```
 
-### Get Paper Details
+---
+
+#### 5. Get Paper by ID
 
 ```
 GET /api/papers/{paper_id}
 ```
 
-Get a specific paper by ID.
+Examples:
 
-**Example for a PMID:**
-```
+```bash
 curl "http://0.0.0.0:8000/api/papers/17299597?api_key=figurex2023"
-```
-**For a PMC ID:**
-```
 curl "http://0.0.0.0:8000/api/papers/PMC7696669?api_key=figurex2023"
 ```
 
-### Export Data
+---
+
+#### 6. Export Paper Data
 
 ```
 GET /api/export
 ```
 
-Export paper data in JSON or CSV format.
-
 **Query Parameters:**
-- `format`: Export format (`json` or `csv`), default: `json`
-- `use_recent`: Use recently processed papers instead of all papers, default: `true`
-- `paper_ids`: Optional list of paper IDs to export
 
-**Examples:**
-```
-# Export single paper
+* `format`: `json` or `csv` (default: `json`)
+* `use_recent`: `true` (default) to export only recently processed papers
+* `paper_ids`: Optional list of paper IDs
+
+Examples:
+
+```bash
 curl "http://0.0.0.0:8000/api/export?format=csv&paper_ids=17299597&api_key=figurex2023"
 
-# Export multiple papers
 curl "http://0.0.0.0:8000/api/export?format=json&paper_ids=PMC1790863&paper_ids=29355051&paper_ids=17299597&api_key=figurex2023"
 ```
 
-### Get Metadata
+---
+
+#### 7. Get Metadata (without download)
 
 ```
 GET /api/metadata
 ```
 
-Get metadata for papers without downloading a file.
-
 **Query Parameters:**
-- `format`: Output format (`json` or `csv`), default: `json`
-- `use_recent`: Use recently processed papers instead of all papers, default: `true`
-- `paper_ids`: Optional list of paper IDs to get metadata for
 
-**Example:**
-```
+* Same as `/api/export`
+
+Example:
+
+```bash
 curl "http://0.0.0.0:8000/api/metadata?paper_ids=PMC1790863&api_key=figurex2023"
 ```
 
-### Search Papers
+---
+
+#### 8. Search Papers
 
 ```
 GET /api/search
 ```
 
-Search papers based on query parameters.
-
 **Query Parameters:**
-- `paper_ids`: Filter by paper IDs
-- `title_contains`: Filter by title containing text
-- `abstract_contains`: Filter by abstract containing text
-- `caption_contains`: Filter by caption containing text
-- `entity_text`: Filter by entity text
-- `entity_type`: Filter by entity type
-- `limit`: Maximum number of results to return (default: 10)
-- `offset`: Number of results to skip (default: 0)
 
-**Examples:**
-```
-# Search by title
+* `paper_ids`
+* `title_contains`
+* `abstract_contains`
+* `caption_contains`
+* `entity_text`
+* `entity_type`
+* `limit` (default: 10)
+* `offset` (default: 0)
+
+Examples:
+
+```bash
 curl "http://0.0.0.0:8000/api/search?title_contains=cancer&limit=5&api_key=figurex2023"
 
-# Search by entity
 curl "http://0.0.0.0:8000/api/search?entity_text=virus&entity_type=Species&api_key=figurex2023"
 
-# Combined search
 curl "http://0.0.0.0:8000/api/search?title_contains=Quantifying&entity_type=Species&api_key=figurex2023"
 ```
 
-### Get Entity Types
+---
+
+#### 9. Get Entity Types
 
 ```
 GET /api/entity-types
 ```
 
-Get all unique entity types in the database.
+Example:
 
-**Example:**
-```
+```bash
 curl "http://0.0.0.0:8000/api/entity-types?api_key=figurex2023"
 ```
 
-### Get Entity Statistics
+---
+
+#### 10. Get Entity Stats
 
 ```
 GET /api/entity-stats
 ```
 
-Get statistics about entities in the database.
+Example:
 
-**Example:**
-```
+```bash
 curl "http://0.0.0.0:8000/api/entity-stats?api_key=figurex2023"
 ```
 
+---
+
+## Makefile Commands
+
+```bash
+# Install dependencies
+make install
+
+# Run the watched folder processor
+make run
+
+# Run the FastAPI server
+make api-run
+
+# Run tests
+make test
+
+# Build Docker image
+make docker-build
+
+# Run Docker container
+make docker-run
+
+# Build a Package
+make build-pkg
+
+# Publish a Package
+make publish-pkg
+```
+
+---
+
+## Watched Directory
+
+FigureX supports automatic ID processing via a watched folder system.
+
+### Folder Structure:
+
+```
+watched_dir/
+├── unprocessed/      # Drop new .txt files with paper IDs here
+├── underprocess/     # Files currently being processed
+└── processed/        # Successfully processed files
+```
+
+### Steps:
+
+1. Place a `.txt` file with paper IDs in `watched_dir/unprocessed`
+2. The system will automatically move files to `underprocess` during ingestion
+3. Processed files will be moved to `processed`
+4. To run the watcher:
+
+   ```bash
+   make run
+   ```
+
+---
+
 ## Configuration
 
-The system can be configured using the `settings.yaml` file or environment variables:
+All settings can be customized via `settings.yaml` or environment variables:
 
-- `FIGUREX_API_KEY`: API key for authentication
-- `FIGUREX_API_URL`: Base URL for the API
+* `FIGUREX_API_KEY` — API key
+* `FIGUREX_API_URL` — Base API URL
+
+---
 
 ## Dashboard
 
-A web dashboard is available at the root URL (`/`) for interactive use.
+An interactive web dashboard is available at the root (`/`) for manual operations.
+
+---
 
 ## License
 
 MIT
 
+---
+
+## Asciinema links
+
+1. [CLI Commands](https://asciinema.org/a/yqu5nGjjAb58XFM0Y4AolLio6)
+2. [API commands](https://asciinema.org/a/LszZEZ2H8Wdp7jkKGCJfYOrpf)
+3. [Querying](https://asciinema.org/a/Wy4eJ8YBIzRh0bshAI4uddTV1)
+4. [Make commands](https://asciinema.org/a/b8laxiu1amPNfCHk6hTlbJ5SV)
+
+## A few screenshots
+![Home page](screenshots/home.png)
+![API authorization](screenshots/api.png)
+![Results](screenshots/results.png)
+![Papers list](screenshots/papers.png)
+![Paper details](screenshots/paper_details.png)
+
 ## Project Structure
 
 ```bash
-figurex/                         # PyPI package root
+figure-captions-extraction/                         # PyPI package root
 ├── api/                         # REST API logic (FastAPI)
-│   └── routes.py                # Endpoints for querying and triggering ingestion
+│   ├── auth.py                  # API key authentication
+│   ├── main.py                  # FastAPI app initialization
+│   ├── models.py                # API request/response models
+│   ├── routes.py                # API endpoints
+│   ├── static/                  # Static assets for dashboard
+│   └── templates/               # Jinja2 templates for dashboard
 ├── cli/                         # CLI commands (Typer)
 │   └── cli.py                   # Typer CLI entrypoint
 ├── config/                      # Config loading/parsing
 │   └── config.py                # Pydantic-based config handling
 ├── ingestion/                   # Ingestion logic for PMC, PMID, etc.
-│   ├── base.py 
-│   ├── id_converter.py
-│   ├── paper_processor.py
+│   ├── base.py                  # Base classes for ingestors
+│   ├── id_converter.py          # PMC ID ↔ PMID conversion
+│   ├── paper_processor.py       # Paper processing orchestration
 │   ├── pmc_ingestor.py          # PMC BioC ingestion logic
-│   ├── pubtator_client.py       # PubTator entity extraction logic
-│   └── watcher.py               # Watched folder ingestion logic
+│   └── pubtator_client.py       # PubTator entity extraction
 ├── processing/                  # Data cleaning, deduplication
-│   ├── base.py
 │   ├── caption_cleaner.py       # Clean/normalize captions
-│   └── entity_mapper.py         # Deduplicate + map entities to captions
-├── storage/                     # DuckDB + future-extensible storage logic
-│   ├── base.py
+│   └── entity_mapper.py         # Map entities to captions
+├── storage/                     # DuckDB + future-extensible storage
+│   ├── base.py                  # Storage interface
 │   ├── duckdb_backend.py        # DuckDB implementation
 │   └── schema.sql               # SQL schema for tables
 ├── models/                      # Pydantic models for core entities
@@ -334,71 +372,13 @@ figurex/                         # PyPI package root
 │   └── responses.py             # API response schemas
 ├── utils/                       # Utility functions
 │   ├── logging.py               # Rich-based logging setup
-│   └── file_utils.py            # I/O helpers
-├── main.py                      # Programmatic entrypoint (optional)
-├── settings.toml                # Default config (storage, logging, etc.)
+│   └── export.py                # Export functionality
+├── docs/                        # All the documentation files
+├── watcher.py                   # Watched directory processor
+├── run_api.py                   # API server entry point
+├── settings.yaml                # Default config
 ├── requirements.txt             # Dependencies
 ├── Makefile                     # Dev and operational tasks
 ├── Dockerfile                   # Docker container setup
-├── README.md                    # Overview and usage guide
-├── pyproject.toml               # Build system + PyPI metadata
-├── docs/                        # MkDocs documentation site
-│   ├── index.md                 # Home page
-│   ├── architecture.md          # Design + architecture overview
-│   ├── usage.md                 # CLI/API usage examples
-│   └── deployment.md            # Deployment instructions
-└── tests/                       # Unit + integration tests
-    ├── test_ingestion.py
-    ├── test_api.py
-    ├── test_storage.py
-    ├── test_batch_ingestion.py
-    
+└── README.md                    # Overview and usage guide
 ```
-
-## Batch Processing Examples
-
-1. Batch ingestion from file:
-
-```bash
-python -m cli.cli ingest test.txt
-```
-
-2. Batch ingestion of multiple IDs:
-
-```bash
-python -m cli.cli batch 17299597 PMC7696669
-```
-
-3. To see terminal output in csv format:
-
-```bash
-python -m cli.cli batch PMC7696669 29355051 --format csv
-```
-
-4. To see terminal output in json format:
-
-```bash
-python -m cli.cli batch PMC7696669 17299597 --format json
-```
-
-5. To save the output to a file
-
-```bash
-python -m cli.cli batch PMC7696669 29355051 --output results.json
-```
-
-```bash
-python -m cli.cli batch PMC7696669 29355051 --output results.csv
-```
-
-6. Resetting the database:
-
-```bash
-python -m cli.cli reset
-```
-Force rest without confirmation
-
-```bash
-python -m cli.cli reset --force
-```
-
